@@ -303,6 +303,7 @@
   /* ============================================================
      ============ دعم شاشة الهاتف (Responsive) ============
      لا يغيّر أي شكل في الشاشات الكبيرة (فوق 900px)
+     ولا يغيّر أي خط (font-family أو font-size) على الهاتف
      ============================================================ */
   @media (max-width: 900px) {
     /* -------- زر إظهار/إخفاء اللوحة -------- */
@@ -320,7 +321,7 @@
       border-bottom: 1px solid #ccc;
       transform: translateY(-100%);
       transition: transform .25s ease;
-      padding-top: 56px; /* لتفادي تداخل زر الإظهار */
+      padding-top: 56px;
     }
     body.panel-open .form-panel {
       transform: translateY(0);
@@ -336,11 +337,8 @@
 
     /* -------- الورقة: تصغير تلقائي لتناسب عرض الشاشة -------- */
     .sheet {
-      /* A4 = 210mm ≈ 794px بمعدل 96 DPI. الحاوية الفعلية ~ أصغر.
-         نستخدم تنسيق متجاوب بحيث يتقلص بنسبة معقولة. */
       transform: scale(var(--mobile-scale, 0.42));
       transform-origin: top right;
-      /* نضبط أبعاد الحاوية الوهمية حتى لا يحدث فراغ كبير */
       margin-bottom: calc(-297mm * (1 - var(--mobile-scale, 0.42)));
       margin-left: calc(-210mm * (1 - var(--mobile-scale, 0.42)));
     }
@@ -349,7 +347,6 @@
     .preview-toolbar {
       top: 8px;
       padding: 8px 10px;
-      font-size: 12px;
       gap: 6px;
       flex-wrap: wrap;
       justify-content: center;
@@ -365,19 +362,13 @@
       padding-bottom: 6px;
       margin-bottom: 4px;
     }
-    .preview-toolbar button {
-      padding: 7px 10px;
-      font-size: 12px;
-    }
   }
 
-  /* للشاشات الصغيرة جداً (هواتف ضيقة) */
+  /* للشاشات الصغيرة جداً (هواتف ضيقة) — بدون أي تغيير للخط */
   @media (max-width: 480px) {
     .form-panel { padding: 12px; padding-top: 56px; }
     .form-row { grid-template-columns: 50px 1fr 1fr 70px 24px; }
     .form-row.pay { grid-template-columns: 42px 1fr 1fr 45px 60px 24px; }
-    .preview-toolbar button { padding: 6px 8px; font-size: 11px; }
-    .panel-toggle { padding: 8px 12px; font-size: 12px; }
   }
 </style>
 </head>
@@ -596,7 +587,6 @@ function checkLock() {
     try { sessionStorage.setItem('customs_unlocked', '1'); } catch (e) {}
     ov.classList.add('hidden');
     err.textContent = '';
-    /* الآن يمكن تشغيل الـ render بعد فتح الصفحة */
     renderFormRows();
     render();
   } else {
@@ -615,7 +605,6 @@ function initLock() {
   } else {
     setTimeout(() => document.getElementById('lockInput').focus(), 100);
   }
-  /* اربط زر Enter */
   document.getElementById('lockInput').addEventListener('keydown', (ev) => {
     if (ev.key === 'Enter') checkLock();
   });
@@ -641,9 +630,7 @@ function updateMobileScale() {
     sheet.style.removeProperty('--mobile-scale');
     return;
   }
-  /* عرض الشاشة متاح داخل .preview-area (يُطرح حشو 16px) */
   const containerW = document.querySelector('.preview-area').clientWidth - 16;
-  /* عرض الورقة بالمليمتر محوّل إلى بكسلات (1mm ≈ 3.7795px بمعدل 96 DPI) */
   const sheetPx = 210 * 3.7795;
   const scale = Math.min(containerW / sheetPx, 1);
   sheet.style.setProperty('--mobile-scale', scale.toFixed(4));
@@ -670,7 +657,6 @@ let payRows = [
 ];
 const ROW_H = 4.35;
 
-/* موضع الختم (المتغيرات الأساسية) */
 let stampX = STAMP_DEFAULT_X;
 let stampY = STAMP_DEFAULT_Y;
 
@@ -1003,8 +989,6 @@ function attachDragHandlers(el) {
     const sheet = document.getElementById('sheet');
     const rect = sheet.getBoundingClientRect();
 
-    /* على الهاتف، الورقة مُصغَّرة بـ transform: scale()
-       لذا نقيس نسبة البكسل/المم من الأبعاد البصرية الفعلية */
     const pxPerMmX = rect.width  / 210;
     const pxPerMmY = rect.height / 297;
 
@@ -1050,7 +1034,6 @@ function openPreview() {
   render();
   document.body.classList.add('preview-mode');
   document.getElementById('previewToolbar').style.display = 'flex';
-  /* على الهاتف، أغلق اللوحة تلقائياً عند الدخول للمعاينة */
   if (window.matchMedia('(max-width: 900px)').matches) {
     document.body.classList.remove('panel-open');
     document.getElementById('panelToggle').textContent = '☰ الإدخال';
@@ -1097,7 +1080,6 @@ document.querySelectorAll('.form-panel input, .form-panel select, .form-panel te
 initLock();
 updateMobileScale();
 
-/* شغّل الصفحة فقط بعد فتح القفل، وإلا سيبقى القفل ظاهراً */
 (function startIfUnlocked() {
   let unlocked = false;
   try { unlocked = sessionStorage.getItem('customs_unlocked') === '1'; } catch (e) {}
