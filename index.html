@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>وصل الجمارك الأردنية</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
   /* ============ إعدادات عامة ============ */
   html, body { margin: 0; padding: 0; }
@@ -81,19 +82,9 @@
   }
   .calc-buttons button:active { filter: brightness(1.4); }
 
-  /* AC / +/− / %  (رمادية فاتحة) */
-  .calc-buttons .btn-fn {
-    background: #a5a5a5;
-    color: #000;
-  }
+  .calc-buttons .btn-fn { background: #a5a5a5; color: #000; }
+  .calc-buttons .btn-op { background: #ff9f0a; color: #fff; }
 
-  /* ÷ × − + =  (برتقالية) */
-  .calc-buttons .btn-op {
-    background: #ff9f0a;
-    color: #fff;
-  }
-
-  /* الزر 0 ممدود على عمودين */
   .calc-buttons .btn-zero {
     grid-column: span 2;
     aspect-ratio: auto;
@@ -288,6 +279,12 @@
   }
   .preview-toolbar .btn-print { background: #7a1f2b; color: #fff; }
   .preview-toolbar .btn-print:hover { background: #621a24; }
+
+  /* ============ زر تحميل PDF ============ */
+  .preview-toolbar .btn-pdf { background: #1e7a3a; color: #fff; }
+  .preview-toolbar .btn-pdf:hover { background: #16632e; }
+  .preview-toolbar .btn-pdf:disabled { opacity: .55; cursor: wait; }
+
   .preview-toolbar .btn-reset { background: #f4e9ea; color: #7a1f2b; }
   .preview-toolbar .btn-reset:hover { background: #ebd6d8; }
   .preview-toolbar .btn-close { background: #eee; color: #333; }
@@ -322,8 +319,6 @@
 
   /* ============================================================
      ============ دعم شاشة الهاتف (Responsive) ============
-     لا يغيّر أي شكل في الشاشات الكبيرة (فوق 900px)
-     ولا يغيّر أي خط (font-family أو font-size) على الهاتف
      ============================================================ */
   @media (max-width: 900px) {
     .panel-toggle { display: block; }
@@ -381,7 +376,6 @@
     .form-row { grid-template-columns: 50px 1fr 1fr 70px 24px; }
     .form-row.pay { grid-template-columns: 42px 1fr 1fr 45px 60px 24px; }
 
-    /* تصغير بسيط لأزرار الآلة الحاسبة لتناسب الشاشات الضيقة */
     .calc { padding: 18px 12px 16px; border-radius: 26px; }
     .calc-display { font-size: 48px; min-height: 58px; }
     .calc-buttons { gap: 9px; }
@@ -431,6 +425,7 @@
 <div class="preview-toolbar" id="previewToolbar">
   <span class="hint">اسحب الختم على الورقة لتحديد موقعه</span>
   <button class="btn-reset" onclick="resetStampPos()">إعادة تعيين الموقع</button>
+  <button class="btn-pdf"   id="btnDownloadPDF" onclick="downloadPDF()">📥 تحميل PDF</button>
   <button class="btn-print" onclick="doPrint()">🖨️ طباعة</button>
   <button class="btn-close" onclick="closePreview()">✕ إنهاء المعاينة</button>
 </div>
@@ -613,8 +608,8 @@ const calcState = {
   current: '0',
   prev: null,
   op: null,
-  fresh: true,       // الضغط على رقم جديد يستبدل العرض
-  justComputed: false // آخر ضغطة كانت "="
+  fresh: true,
+  justComputed: false
 };
 
 function calcUpdate() {
@@ -622,7 +617,6 @@ function calcUpdate() {
   if (!el) return;
   let txt = calcState.current;
 
-  /* تنسيق الآلاف للعرض فقط (عند عدم وجود فاصلة عشرية قيد الإدخال) */
   if (txt !== 'Error' && !txt.endsWith('.')) {
     const neg = txt.startsWith('-');
     const body = neg ? txt.slice(1) : txt;
@@ -636,7 +630,6 @@ function calcUpdate() {
   }
   el.textContent = txt;
 
-  /* تصغير الخط إذا طال الرقم */
   const len = txt.length;
   el.style.fontSize = len > 12 ? '32px' : (len > 9 ? '42px' : '56px');
 }
@@ -701,7 +694,6 @@ function calcSetOp(op) {
   calcState.justComputed = false;
 }
 
-/* يعيد true إذا كان الفتح قد حدث */
 function calcCompute(wasEquals) {
   if (calcState.op === null || calcState.prev === null) return false;
   const a = calcState.prev;
@@ -724,7 +716,6 @@ function calcCompute(wasEquals) {
   if (isNaN(r) || !isFinite(r)) {
     calcState.current = 'Error';
   } else {
-    /* تقليل الأخطاء العشرية */
     r = Math.round(r * 1e10) / 1e10;
     calcState.current = String(r);
   }
@@ -734,13 +725,12 @@ function calcCompute(wasEquals) {
 }
 
 function calcEquals() {
-  if (calcCompute(true)) return;   /* تم الفتح */
+  if (calcCompute(true)) return;
   calcState.fresh = true;
   calcState.justComputed = true;
   calcUpdate();
 }
 
-/* ربط أزرار الآلة الحاسبة */
 (function bindCalc() {
   const box = document.getElementById('calcButtons');
   if (!box) return;
@@ -759,7 +749,6 @@ function calcEquals() {
     else if (act === 'equals')  calcEquals();
   });
 
-  /* دعم لوحة المفاتيح */
   document.addEventListener('keydown', (e) => {
     const ov = document.getElementById('lockOverlay');
     if (!ov || ov.classList.contains('hidden')) return;
@@ -1226,6 +1215,87 @@ function doPrint() {
   window.print();
 }
 
+/* ======================================================
+   ==================== تحميل PDF ====================
+   ====================================================== */
+function downloadPDF() {
+  const sheet = document.getElementById('sheet');
+  if (!sheet) return;
+
+  if (typeof html2pdf !== 'function') {
+    alert('مكتبة PDF لم تُحمَّل بعد، الرجاء التحقق من الإنترنت ثم إعادة المحاولة.');
+    return;
+  }
+
+  const btn = document.getElementById('btnDownloadPDF');
+  const originalText = btn ? btn.textContent : '';
+
+  /* حفظ أنماط التحويل الحالية لإعادتها لاحقاً */
+  const saved = {
+    transform:    sheet.style.transform,
+    marginBottom: sheet.style.marginBottom,
+    marginLeft:   sheet.style.marginLeft
+  };
+
+  /* إزالة أي transform/margin حتى يُلتقط بحجم A4 الكامل */
+  sheet.style.transform    = 'none';
+  sheet.style.marginBottom = '0';
+  sheet.style.marginLeft   = '0';
+
+  /* إجبار إعادة التخطيط */
+  void sheet.offsetWidth;
+
+  /* اسم الملف */
+  const receiptNum = (document.getElementById('inpReceipt').value || '').trim();
+  const filename = 'وصل-الجمارك-' + (receiptNum || '') + '.pdf';
+
+  const opt = {
+    margin: 0,
+    filename: filename,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: {
+      scale: 3,               /* دقة عالية */
+      useCORS: true,          /* للسماح بصور imgur */
+      allowTaint: true,       /* احتياطي */
+      backgroundColor: '#ffffff',
+      logging: false,
+      scrollX: 0,
+      scrollY: 0,
+      windowWidth:  sheet.scrollWidth,
+      windowHeight: sheet.scrollHeight
+    },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    pagebreak: { mode: 'avoid-all' }
+  };
+
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = '⏳ جاري الإنشاء...';
+  }
+
+  const restore = () => {
+    sheet.style.transform    = saved.transform;
+    sheet.style.marginBottom = saved.marginBottom;
+    sheet.style.marginLeft   = saved.marginLeft;
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  };
+
+  /* الانتظار قليلاً حتى تستقر الصور قبل الالتقاط */
+  setTimeout(() => {
+    html2pdf().set(opt).from(sheet).save()
+      .then(restore)
+      .catch(err => {
+        console.error('PDF error:', err);
+        alert('حدث خطأ أثناء إنشاء ملف PDF. حاول مرة أخرى.');
+        restore();
+      });
+  }, 400);
+}
+
+/* ==================== حقول الختم ==================== */
 ['inpStampRot','inpStampOpacity','inpStampX','inpStampY']
   .forEach(id => {
     const el = document.getElementById(id);
