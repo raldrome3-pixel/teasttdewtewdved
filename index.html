@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>وصل الجمارك الأردنية</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<style>
+  /* ============ إعدادات عامة ============ */
+  html, body { margin: 0; padding: 0; }
+  body { font-family: Arial, Tahoma, 'Segoe UI', sans-serif; background: #e8e8e8; color: #000; }
+
+  /* ============ شاشة القفل (الرمز السري) ============ */
+  .lock-overlay {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(135deg, #2c2c2c 0%, #4a1f26 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    direction: rtl;
+    font-family: inherit;
+    padding: 16px;
+    box-sizing: border-box;
+  }
+  .lock-overlay.hidden { display: none; }
+  .lock-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 32px 28px;
+    width: 320px;
+    max-width: 90vw;
+    box-shadow: 0 12px 40px rgba(0,0,0,.4);
+    text-align: center;
+  }
+  .lock-card h2 {
+    margin: 0 0 6px;
+    font-size: 18px;
+    color: #7a1f2b;
+  }
+  .lock-card p {
+    margin: 0 0 18px;
+    font-size: 12px;
+    color: #666;
+  }
+  .lock-card input {
+    width: 100%;
+    padding: 12px;
+    font-size: 18px;
+    text-align: center;
+    letter-spacing: 4px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    box-sizing: border-box;
+    font-family: inherit;
+    direction: ltr;
+  }
+  .lock-card input:focus {
+    outline: none;
+    border-color: #7a1f2b;
+    box-shadow: 0 0 0 3px rgba(122,31,43,.15);
+  }
+  .lock-card button {
+    margin-top: 14px;
+    width: 100%;
+    padding: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    background: #7a1f2b;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .lock-card button:hover { background: #621a24; }
+  .lock-error {
+    color: #b00020;
+    font-size: 12px;
+    margin-top: 10px;
+    min-height: 16px;
+  }
+
+  /* ============ لوحة الإدخال ============ */
+  .form-panel {
+    position: fixed; top: 0; right: 0;
+    width: 360px; height: 100vh;
+    background: #f5f5f5; border-left: 1px solid #ccc;
+    padding: 16px; overflow-y: auto; box-sizing: border-box;
+    z-index: 100; direction: rtl; font-size: 12px;
+  }
+  .form-panel h2 { font-size: 14px; margin: 14px 0 8px; color: #7a1f2b; }
+  .form-panel h2:first-child { margin-top: 0; }
+  .form-panel label { display: block; margin: 8px 0 3px; font-size: 11px; color: #444; }
+  .form-panel input, .form-panel textarea, .form-panel select {
+    width: 100%; padding: 5px 6px; font-size: 12px; font-family: inherit;
+    border: 1px solid #bbb; border-radius: 3px; box-sizing: border-box; background: #fff;
+  }
+  .form-panel .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .form-panel .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+  .form-panel button {
+    margin-top: 10px; padding: 8px; width: 100%; font-size: 12px; font-weight: 700;
+    background: #7a1f2b; color: #fff; border: none; border-radius: 3px; cursor: pointer; font-family: inherit;
+  }
+  .form-panel button:hover { background: #621a24; }
+  .form-panel .btn-add { background: #fff; color: #7a1f2b; border: 1px dashed #7a1f2b; margin-top: 6px; }
+  .form-panel .btn-add:hover { background: #f4e9ea; }
+  .logo-status { color: #b00020; font-size: 11px; margin-top: 4px; min-height: 14px; }
+
+  .form-row { display: grid; grid-template-columns: 60px 1fr 1fr 80px 24px; gap: 4px; margin-top: 6px; align-items: center; }
+  .form-row.pay { grid-template-columns: 50px 1fr 1fr 55px 70px 24px; }
+  .form-row input { font-size: 11px; padding: 4px 5px; }
+  .form-row .rm { padding: 0; width: 24px; height: 24px; background: none; border: 1px solid #7a1f2b; color: #7a1f2b; border-radius: 3px; cursor: pointer; font-size: 14px; line-height: 1; margin-top: 0; font-weight: 700; }
+
+  /* ============ زر إظهار/إخفاء اللوحة (يظهر في الهاتف فقط) ============ */
+  .panel-toggle {
+    display: none;
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    z-index: 200;
+    padding: 10px 14px;
+    background: #7a1f2b;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,.25);
+  }
+  .panel-toggle:hover { background: #621a24; }
+
+  /* ============ المعاينة ============ */
+  .preview-area { margin-right: 360px; padding: 20px; display: flex; justify-content: center; }
+
+  /* ============ ورقة A4 ============ */
+  .sheet {
+    width: 210mm; height: 297mm; background: #fff; position: relative;
+    box-shadow: 0 0 12px rgba(0,0,0,.25); overflow: hidden;
+    direction: rtl; font-family: Arial, Tahoma, sans-serif; color: #000; flex-shrink: 0;
+    transform-origin: top center;
+  }
+  .sheet > * { position: absolute; }
+
+  .line-h, .line-v { position: absolute; background: #000; }
+  .ctr { position: absolute; transform: translateX(-50%); white-space: nowrap; text-align: center; }
+
+  /* ============ الترويسة ============ */
+  .copy-tag { top: 14.4mm; right: 13.7mm; font-size: 8pt; white-space: nowrap; }
+
+  /* ============================================================
+     الشعار: 13 × 15.5 مم (مطابق للصورة المرجعية)
+     ============================================================ */
+  .crest-img { top: 14.0mm; left: 99.0mm; width: 13mm; height: 15.5mm; object-fit: contain; }
+  .crest-fallback { top: 14.0mm; left: 99.0mm; width: 13mm; height: 15.5mm; border: 0.3mm dashed #b5b5b5; box-sizing: border-box; }
+  .crest-img.bw { filter: grayscale(1) contrast(1.6); }
+
+  .t1 { top: 32.1mm; left: 105.5mm; font-size: 18pt; font-weight: bold; line-height: 1; }
+  .t2 { top: 42.2mm; left: 105.5mm; font-size: 18pt; font-weight: bold; line-height: 1; }
+  .t3 { top: 50.8mm; left: 105.5mm; font-size: 16pt; font-weight: normal; line-height: 1; }
+
+  /* ============ المربعات الثلاثة ============ */
+  .box { top: 63.9mm; height: 24.0mm; border: 0.4mm solid #000; box-sizing: border-box; position: absolute; }
+  .box1 { left: 45.0mm; width: 75.8mm; }
+  .box2 { left: 122.6mm; width: 26.2mm; }
+  .box3 { left: 150.6mm; width: 46.0mm; }
+
+  .b1 { position: absolute; right: 1.7mm; text-align: right; white-space: nowrap; }
+  .b1.t-2-0  { top: 2.0mm;  font-size: 8pt; font-weight: bold; }
+  .b1.t-7-1  { top: 7.1mm;  font-size: 7pt; font-weight: bold; }
+  .b1.t-12-2 { top: 12.2mm; font-size: 8pt; font-weight: bold; }
+  .b1.t-17-1 { top: 17.1mm; font-size: 8pt; font-weight: bold; }
+
+  .b2 { position: absolute; right: 1.7mm; text-align: right; font-size: 8pt; font-weight: bold; white-space: nowrap; }
+  .b2.t-1-9  { top: 1.9mm;  }
+  .b2.t-6-9  { top: 6.9mm;  }
+  .b2.t-12-0 { top: 12.0mm; }
+  .b2.t-17-0 { top: 17.0mm; }
+
+  .b3l { position: absolute; right: 1.5mm; font-size: 11pt; font-weight: bold; text-align: right; white-space: nowrap; }
+  .b3v { position: absolute; right: 23.0mm; font-size: 11pt; font-weight: bold; text-align: right; white-space: nowrap; }
+  .b3l.t-1-65, .b3v.t-1-65 { top: 1.65mm; }
+  .b3l.t-8-05, .b3v.t-8-05 { top: 8.05mm; }
+  .b3l.t-14-75, .b3v.t-14-75 { top: 14.75mm; }
+
+  /* ============ QR ============ */
+  .qr-holder { top: 64.7mm; left: 19.5mm; width: 22mm; height: 22mm; overflow: hidden; }
+  .qr-holder svg { display: block; width: 22mm !important; height: 22mm !important; shape-rendering: crispEdges; }
+
+  /* ============ معلومات الوثيقة ============ */
+  .doc-type { top: 90.5mm; right: 13.4mm; font-size: 8pt; white-space: nowrap; }
+  .party-title { top: 95.5mm; right: 13.7mm; font-size: 8pt; font-weight: bold; white-space: nowrap; }
+  .party-line { right: 13.7mm; font-size: 8pt; font-weight: bold; white-space: nowrap; }
+  .party-line.l1 { top: 100.8mm; }
+  .party-line.l2 { top: 106.0mm; }
+  .party-line.l3 { top: 111.2mm; }
+
+  /* ============ عناوين الأقسام ============ */
+  .sec-title { font-size: 12pt; font-weight: bold; white-space: nowrap; text-align: right; }
+  #sec1 { top: 113.7mm; right: 13.9mm; }
+  #sec2 { right: 13.7mm; }
+
+  /* ============ خلايا الجداول ============ */
+  .th-cell { position: absolute; transform: translateX(-50%); font-size: 8pt; white-space: nowrap; text-align: center; }
+  .cell-val { position: absolute; white-space: nowrap; color: #000; line-height: 4.35mm; }
+  .row-bg   { position: absolute; background: #d0d0d0; }
+
+  /* ============ المجموع + المبلغ كتابةً ============ */
+  .total-line { position: absolute; right: 174.6mm; text-align: right; font-size: 8pt; font-weight: normal; white-space: nowrap; }
+  .amount-words {
+    position: absolute; right: 173.6mm; left: 14.7mm; text-align: right;
+    font-size: 8pt; font-weight: bold;
+    white-space: nowrap;
+  }
+
+  /* ============ صورة الختم (Draggable) ============ */
+  .stamp-img {
+    position: absolute;
+    pointer-events: auto;
+    cursor: move;
+    z-index: 6;
+    user-select: none;
+    -webkit-user-drag: none;
+    mix-blend-mode: multiply;
+    touch-action: none;
+  }
+  .stamp-img.dragging { cursor: grabbing; }
+
+  /* ============ شريط أدوات المعاينة ============ */
+  .preview-toolbar {
+    position: fixed;
+    top: 14px; left: 50%;
+    transform: translateX(-50%);
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 10px 16px;
+    display: none;
+    gap: 12px;
+    align-items: center;
+    z-index: 500;
+    box-shadow: 0 6px 24px rgba(0,0,0,.18);
+    font-size: 13px;
+    font-family: inherit;
+    color: #333;
+    max-width: calc(100vw - 20px);
+    box-sizing: border-box;
+  }
+  body.preview-mode .preview-toolbar { display: flex; }
+  .preview-toolbar .hint {
+    font-weight: 700;
+    color: #7a1f2b;
+    padding-inline-end: 8px;
+    border-inline-end: 1px solid #eee;
+  }
+  .preview-toolbar button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 700;
+    font-family: inherit;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  .preview-toolbar .btn-print { background: #7a1f2b; color: #fff; }
+  .preview-toolbar .btn-print:hover { background: #621a24; }
+  .preview-toolbar .btn-reset { background: #f4e9ea; color: #7a1f2b; }
+  .preview-toolbar .btn-reset:hover { background: #ebd6d8; }
+  .preview-toolbar .btn-close { background: #eee; color: #333; }
+  .preview-toolbar .btn-close:hover { background: #ddd; }
+
+  /* ============ التذييل ============ */
+  .f-cashier { top: 252.7mm; right: 13.9mm; font-size: 8pt; white-space: nowrap; }
+  .f-stamp   { top: 253.0mm; left: 44.2mm; font-size: 8pt; white-space: nowrap; }
+  .f-barcode { top: 253.7mm; left: 69.5mm; width: 70mm; height: 10.1mm; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .f-barcode img { width: 100% !important; height: 100% !important; display: block; object-fit: contain; }
+  .f-bc-text {
+    top: 263.8mm; left: 102.7mm; transform: translateX(-50%);
+    font-size: 8.4pt; letter-spacing: 0.1mm; white-space: nowrap;
+  }
+  .f-sign { top: 261.3mm; right: 13.9mm; font-size: 8pt; font-weight: bold; white-space: nowrap; }
+  .f-page { top: 269.1mm; left: 15.4mm;  font-size: 8pt; font-weight: bold; white-space: nowrap; }
+  .f-print{ top: 268.3mm; right: 13.9mm; font-size: 8pt; white-space: nowrap; }
+
+  /* ============ الطباعة ============ */
+  @media print {
+    body { background: #fff; }
+    .form-panel { display: none !important; }
+    .preview-toolbar { display: none !important; }
+    .lock-overlay { display: none !important; }
+    .crest-fallback { display: none !important; }
+    .panel-toggle { display: none !important; }
+    .preview-area { margin: 0; padding: 0; display: block; }
+    .sheet { box-shadow: none; margin: 0; transform: none !important; }
+    @page { size: A4 portrait; margin: 0; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+
+  /* ============================================================
+     ============ دعم شاشة الهاتف (Responsive) ============
+     لا يغيّر أي شكل في الشاشات الكبيرة (فوق 900px)
+     ============================================================ */
+  @media (max-width: 900px) {
+    /* -------- زر إظهار/إخفاء اللوحة -------- */
+    .panel-toggle { display: block; }
+
+    /* -------- لوحة الإدخال: تصبح منسدلة من الأعلى -------- */
+    .form-panel {
+      top: 0;
+      right: 0;
+      left: 0;
+      width: 100%;
+      height: auto;
+      max-height: 85vh;
+      border-left: none;
+      border-bottom: 1px solid #ccc;
+      transform: translateY(-100%);
+      transition: transform .25s ease;
+      padding-top: 56px; /* لتفادي تداخل زر الإظهار */
+    }
+    body.panel-open .form-panel {
+      transform: translateY(0);
+    }
+
+    /* -------- المعاينة تملأ الشاشة -------- */
+    .preview-area {
+      margin-right: 0;
+      padding: 70px 8px 16px;
+      justify-content: flex-start;
+      overflow-x: auto;
+    }
+
+    /* -------- الورقة: تصغير تلقائي لتناسب عرض الشاشة -------- */
+    .sheet {
+      /* A4 = 210mm ≈ 794px بمعدل 96 DPI. الحاوية الفعلية ~ أصغر.
+         نستخدم تنسيق متجاوب بحيث يتقلص بنسبة معقولة. */
+      transform: scale(var(--mobile-scale, 0.42));
+      transform-origin: top right;
+      /* نضبط أبعاد الحاوية الوهمية حتى لا يحدث فراغ كبير */
+      margin-bottom: calc(-297mm * (1 - var(--mobile-scale, 0.42)));
+      margin-left: calc(-210mm * (1 - var(--mobile-scale, 0.42)));
+    }
+
+    /* -------- شريط أدوات المعاينة: يلتف على الهاتف -------- */
+    .preview-toolbar {
+      top: 8px;
+      padding: 8px 10px;
+      font-size: 12px;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: calc(100vw - 16px);
+    }
+    .preview-toolbar .hint {
+      display: block;
+      width: 100%;
+      text-align: center;
+      border-inline-end: none;
+      padding-inline-end: 0;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 6px;
+      margin-bottom: 4px;
+    }
+    .preview-toolbar button {
+      padding: 7px 10px;
+      font-size: 12px;
+    }
+  }
+
+  /* للشاشات الصغيرة جداً (هواتف ضيقة) */
+  @media (max-width: 480px) {
+    .form-panel { padding: 12px; padding-top: 56px; }
+    .form-row { grid-template-columns: 50px 1fr 1fr 70px 24px; }
+    .form-row.pay { grid-template-columns: 42px 1fr 1fr 45px 60px 24px; }
+    .preview-toolbar button { padding: 6px 8px; font-size: 11px; }
+    .panel-toggle { padding: 8px 12px; font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ==================== زر إظهار/إخفاء اللوحة (يظهر في الهاتف فقط) ==================== -->
+<button class="panel-toggle" id="panelToggle" onclick="togglePanel()">☰ الإدخال</button>
+
+<!-- ==================== شاشة القفل (الرمز السري) ==================== -->
+<div class="lock-overlay" id="lockOverlay">
+  <div class="lock-card">
+    <h2>يرجى ادخال رمز الأمان</h2>
+    <input type="password" id="lockInput" maxlength="12" autocomplete="off" inputmode="numeric" placeholder="••••••••">
+    <button onclick="checkLock()">دخول</button>
+    <div class="lock-error" id="lockError"></div>
+  </div>
+</div>
+
+<!-- ==================== شريط أدوات المعاينة ==================== -->
+<div class="preview-toolbar" id="previewToolbar">
+  <span class="hint">اسحب الختم على الورقة لتحديد موقعه</span>
+  <button class="btn-reset" onclick="resetStampPos()">إعادة تعيين الموقع</button>
+  <button class="btn-print" onclick="doPrint()">🖨️ طباعة</button>
+  <button class="btn-close" onclick="closePreview()">✕ إنهاء المعاينة</button>
+</div>
+
+<!-- ==================== لوحة الإدخال ==================== -->
+<div class="form-panel" id="formPanel">
+  <h2>إعدادات الشعار والختم (خيارات إضافية)</h2>
+  <label style="display:flex; align-items:center; gap:6px; margin-top:6px; margin-bottom: 12px;">
+    <input type="checkbox" id="inpLogoBW" style="width:auto;"> تحويل الشعار إلى أبيض وأسود
+  </label>
+  <div class="logo-status" id="logoStatus"></div>
+
+  <div class="row2">
+    <div><label>دوران الختم (°)</label><input type="text" id="inpStampRot" value="-30"></div>
+    <div><label>شفافية الختم</label><input type="text" id="inpStampOpacity" value="0.85"></div>
+  </div>
+  <div class="row2">
+    <div><label>موقع الختم X (مم)</label><input type="text" id="inpStampX" value="138"></div>
+    <div><label>موقع الختم Y (مم)</label><input type="text" id="inpStampY" value="195"></div>
+  </div>
+
+  <h2>بيانات الوصل</h2>
+
+  <label>نوع النسخة</label>
+  <select id="inpCopyType">
+    <option value="نسخة المعاملة - زهري">نسخة المعاملة - زهري</option>
+    <option value="نسخة صاحب العلاقة - أبيض" selected>نسخة صاحب العلاقة - أبيض</option>
+  </select>
+
+  <div class="row2">
+    <div><label>رقم الوصل</label><input type="text" id="inpReceipt" value="132394"></div>
+    <div><label>السنة</label><input type="text" id="inpYear" value="2026"></div>
+  </div>
+  <div class="row2">
+    <div><label>كود المركز</label><input type="text" id="inpCenterCode" value="226"></div>
+    <div><label>اسم المركز الجمركي</label><input type="text" id="inpCenterName" value="226 جمرك جابر"></div>
+  </div>
+  <div class="row2">
+    <div><label>رمز المصرح</label><input type="text" id="inpDeclarant" value="00623"></div>
+    <div><label>رمز الشركة</label><input type="text" id="inpCompany" value=""></div>
+  </div>
+
+  <label>التاريخ (YYYY-MM-DD)</label>
+  <input type="text" id="inpDate" value="2026-06-13" placeholder="YYYY-MM-DD">
+
+  <label>نوع الوثيقة</label>
+  <input type="text" id="inpDocType" value="2 بيان جمركي 6955 1 2026 226">
+
+  <label>معلومات صاحب العلاقة (حتى 3 أسطر)</label>
+  <textarea id="inpParty" rows="3">رهف الدولية للتخليص على البضائع
+لبنان-مؤسسة ازورا</textarea>
+
+  <h2>المعاملات</h2>
+  <div class="form-row" style="font-size:10px;color:#666;font-weight:bold;">
+    <span>رمز</span><span>وصف</span><span>مرجع</span><span>مبلغ</span><span></span>
+  </div>
+  <div id="txnForm"></div>
+  <button class="btn-add" onclick="addTxnRow()">+ إضافة صف معاملة</button>
+
+  <h2>وسائل الدفع</h2>
+  <div class="form-row pay" style="font-size:10px;color:#666;font-weight:bold;">
+    <span>رمز</span><span>وصف</span><span>مرجع</span><span>بنك</span><span>مبلغ</span><span></span>
+  </div>
+  <div id="payForm"></div>
+  <button class="btn-add" onclick="addPayRow()">+ إضافة صف دفع</button>
+
+  <h2>المبلغ كتابةً</h2>
+  <label>النص كما سيظهر (يقبل أسطراً ومسافات متعددة)</label>
+  <textarea id="inpAmountWords" rows="3">فقط ستمائة دينار لا غير</textarea>
+
+  <h2>التذييل</h2>
+  <div class="row2">
+    <div><label>أمين الصندوق</label><input type="text" id="inpCashier" value="35362"></div>
+    <div><label>رقم الصفحة</label><input type="text" id="inpPage" value="Page 1/1"></div>
+  </div>
+  <div class="row2">
+    <div><label>تاريخ الطباعة</label><input type="text" id="inpPrintDate" value="2026/06/13"></div>
+    <div><label>وقت الطباعة</label><input type="text" id="inpPrintTime" value="08:33:14"></div>
+  </div>
+
+  <button onclick="openPreview()">معاينة وطباعة</button>
+</div>
+
+<!-- ==================== المعاينة ==================== -->
+<div class="preview-area">
+  <div class="sheet" id="sheet">
+
+    <!-- ترونيسة ثابتة -->
+    <div class="copy-tag" id="pCopy"></div>
+
+    <!-- الشعار -->
+    <img class="crest-img" id="pCrest" alt="" referrerpolicy="no-referrer" style="display:none;">
+    <div class="crest-fallback" id="pCrestFallback"></div>
+
+    <div class="ctr t1">الجمارك الأردنية</div>
+    <div class="ctr t2">وصل مالي</div>
+    <div class="ctr t3">دفعات مالية أخرى</div>
+
+    <div class="line-h" style="top:60.5mm; left:14.7mm; width:181.9mm; height:0.5mm;"></div>
+
+    <!-- المربعات الثلاثة -->
+    <div class="box box1">
+      <div class="b1 t-2-0">المركز الجمركي:</div>
+      <div class="b1 t-7-1" id="pCenterName"></div>
+      <div class="b1 t-12-2">التاريخ:</div>
+      <div class="b1 t-17-1" id="pDate"></div>
+    </div>
+
+    <div class="box box2">
+      <div class="b2 t-1-9">رمز المصرح:</div>
+      <div class="b2 t-6-9" id="pDeclarant"></div>
+      <div class="b2 t-12-0">رمز الشركة:</div>
+      <div class="b2 t-17-0" id="pCompany"></div>
+    </div>
+
+    <div class="box box3">
+      <div class="b3l t-1-65">رقم الوصل:</div>
+      <div class="b3v t-1-65" id="pReceipt"></div>
+      <div class="b3l t-8-05">السنة:</div>
+      <div class="b3v t-8-05" id="pYear"></div>
+      <div class="b3l t-14-75">المركز:</div>
+      <div class="b3v t-14-75" id="pCenterCode"></div>
+    </div>
+
+    <!-- QR -->
+    <div class="qr-holder" id="qrHolder"></div>
+
+    <!-- معلومات الوثيقة -->
+    <div class="doc-type">نوع الوثيقة: <b id="pDocType"></b></div>
+    <div class="party-title">معلومات صاحب العلاقة:</div>
+    <div class="party-line l1" id="pParty1"></div>
+    <div class="party-line l2" id="pParty2"></div>
+    <div class="party-line l3" id="pParty3"></div>
+
+    <!-- عناوين الأقسام -->
+    <div class="sec-title" id="sec1">المعاملات:</div>
+    <div class="sec-title" id="sec2">وسائل الدفع:</div>
+
+    <!-- مجموع المعاملات -->
+    <div class="total-line" id="txnTotal"></div>
+
+    <!-- مجموع الدفع -->
+    <div class="total-line" id="payTotal"></div>
+    <div class="amount-words" id="payWords"></div>
+
+    <!-- التذييل -->
+    <div class="f-cashier">اسم أمين الصندوق: <b id="pCashier"></b></div>
+    <div class="f-stamp">الخاتم</div>
+    <div class="f-barcode"><img id="barcode" alt="" referrerpolicy="no-referrer"></div>
+    <div class="f-bc-text" id="pBcText"></div>
+    <div class="f-sign">التوقيع:</div>
+    <div class="line-h" style="top:268.1mm; left:14.7mm; width:180.3mm; height:0.3mm;"></div>
+    <div class="f-page"  id="pPage"></div>
+    <div class="f-print" id="pPrint"></div>
+
+  </div>
+</div>
+
+<script>
+/* ======================================================
+   ثوابت الروابط داخل الكود (تعديل الروابط من هنا)
+   ====================================================== */
+
+/* ============================================================
+   ➤➤➤ مكان تغيير رابط الشعار:
+   استبدل القيمة التالية برابط صورة الشعار الخاص بك
+   (يجب أن يكون رابطاً مباشراً ينتهي بـ .png أو .jpg أو .svg)
+   مثال: "https://example.com/my-logo.png"
+   ============================================================ */
+const DEFAULT_LOGO_URL    = "https://i.imgur.com/GHScExh.png";
+
+/* رابط صورة الختم */
+const DEFAULT_STAMP_URL   = "https://i.imgur.com/5UssSpN.png";
+
+/* رابط صورة الباركود */
+const DEFAULT_BARCODE_URL = "https://i.imgur.com/yznREQi.jpeg";
+
+/* ============================================================
+   ➤➤➤ الرمز السري لفتح الصفحة (عدّله من هنا إن أردت)
+   ============================================================ */
+const SECRET_CODE = "31122006";
+
+/* موضع الختم الافتراضي (ملّيمتر من الزاوية العليا اليسرى للورقة) */
+const STAMP_DEFAULT_X = 138;
+const STAMP_DEFAULT_Y = 195;
+
+/* ==================== شاشة القفل (الرمز السري) ==================== */
+function checkLock() {
+  const input = document.getElementById('lockInput').value.trim();
+  const err   = document.getElementById('lockError');
+  const ov    = document.getElementById('lockOverlay');
+
+  if (input === SECRET_CODE) {
+    try { sessionStorage.setItem('customs_unlocked', '1'); } catch (e) {}
+    ov.classList.add('hidden');
+    err.textContent = '';
+    /* الآن يمكن تشغيل الـ render بعد فتح الصفحة */
+    renderFormRows();
+    render();
+  } else {
+    err.textContent = 'الرمز غير صحيح، حاول مرة أخرى';
+    document.getElementById('lockInput').value = '';
+    document.getElementById('lockInput').focus();
+  }
+}
+
+function initLock() {
+  let unlocked = false;
+  try { unlocked = sessionStorage.getItem('customs_unlocked') === '1'; } catch (e) {}
+  const ov = document.getElementById('lockOverlay');
+  if (unlocked) {
+    ov.classList.add('hidden');
+  } else {
+    setTimeout(() => document.getElementById('lockInput').focus(), 100);
+  }
+  /* اربط زر Enter */
+  document.getElementById('lockInput').addEventListener('keydown', (ev) => {
+    if (ev.key === 'Enter') checkLock();
+  });
+}
+
+/* ==================== زر اللوحة (الهاتف) ==================== */
+function togglePanel() {
+  document.body.classList.toggle('panel-open');
+  const btn = document.getElementById('panelToggle');
+  if (document.body.classList.contains('panel-open')) {
+    btn.textContent = '✕ إغلاق';
+  } else {
+    btn.textContent = '☰ الإدخال';
+  }
+}
+
+/* ==================== ضبط مقياس الورقة على الهاتف ==================== */
+function updateMobileScale() {
+  const sheet = document.getElementById('sheet');
+  if (!sheet) return;
+  const isMobile = window.matchMedia('(max-width: 900px)').matches;
+  if (!isMobile) {
+    sheet.style.removeProperty('--mobile-scale');
+    return;
+  }
+  /* عرض الشاشة متاح داخل .preview-area (يُطرح حشو 16px) */
+  const containerW = document.querySelector('.preview-area').clientWidth - 16;
+  /* عرض الورقة بالمليمتر محوّل إلى بكسلات (1mm ≈ 3.7795px بمعدل 96 DPI) */
+  const sheetPx = 210 * 3.7795;
+  const scale = Math.min(containerW / sheetPx, 1);
+  sheet.style.setProperty('--mobile-scale', scale.toFixed(4));
+}
+
+window.addEventListener('resize', updateMobileScale);
+window.addEventListener('orientationchange', () => setTimeout(updateMobileScale, 150));
+
+/* ==================== أدوات ==================== */
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, ch => (
+    { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch]
+  ));
+}
+function pad(v, n) { return String(v == null ? '' : v).padStart(n, '0'); }
+
+/* ==================== الحالة ==================== */
+let txnRows = [
+  { code:'305', desc:'ثلث الغرامات',       ref:'عدم ابراز تصريح',   amt:'199.980' },
+  { code:'005', desc:'ثلثي غرامات-ايراد',  ref:'مخالفه تعليمات',    amt:'400.020' }
+];
+let payRows = [
+  { code:'10', desc:'نقد', ref:'', bank:'', amt:'600.000' }
+];
+const ROW_H = 4.35;
+
+/* موضع الختم (المتغيرات الأساسية) */
+let stampX = STAMP_DEFAULT_X;
+let stampY = STAMP_DEFAULT_Y;
+
+/* ==================== نموذج الصفوف ==================== */
+function renderFormRows() {
+  const tf = document.getElementById('txnForm');
+  tf.innerHTML = txnRows.map((r, i) => `
+    <div class="form-row" data-idx="${i}">
+      <input type="text" data-k="code" value="${esc(r.code)}" placeholder="رمز">
+      <input type="text" data-k="desc" value="${esc(r.desc)}" placeholder="وصف">
+      <input type="text" data-k="ref"  value="${esc(r.ref)}"  placeholder="مرجع">
+      <input type="text" data-k="amt"  value="${esc(r.amt)}"  placeholder="مبلغ">
+      <button class="rm" onclick="removeTxnRow(${i})" title="حذف">×</button>
+    </div>
+  `).join('');
+
+  const pf = document.getElementById('payForm');
+  pf.innerHTML = payRows.map((r, i) => `
+    <div class="form-row pay" data-idx="${i}">
+      <input type="text" data-k="code" value="${esc(r.code)}" placeholder="رمز">
+      <input type="text" data-k="desc" value="${esc(r.desc)}" placeholder="وصف">
+      <input type="text" data-k="ref"  value="${esc(r.ref)}"  placeholder="مرجع">
+      <input type="text" data-k="bank" value="${esc(r.bank)}" placeholder="بنك">
+      <input type="text" data-k="amt"  value="${esc(r.amt)}"  placeholder="مبلغ">
+      <button class="rm" onclick="removePayRow(${i})" title="حذف">×</button>
+    </div>
+  `).join('');
+}
+
+function addTxnRow() { txnRows.push({code:'',desc:'',ref:'',amt:''}); renderFormRows(); render(); }
+function addPayRow() { payRows.push({code:'',desc:'',ref:'',bank:'',amt:''}); renderFormRows(); render(); }
+function removeTxnRow(i) { txnRows.splice(i,1); if (!txnRows.length) txnRows.push({code:'',desc:'',ref:'',amt:''}); renderFormRows(); render(); }
+function removePayRow(i) { payRows.splice(i,1); if (!payRows.length) payRows.push({code:'',desc:'',ref:'',bank:'',amt:''}); renderFormRows(); render(); }
+
+['txnForm','payForm'].forEach(id => {
+  document.getElementById(id).addEventListener('input', e => {
+    const inp = e.target;
+    if (inp.tagName !== 'INPUT') return;
+    const wrap = inp.closest('.form-row');
+    if (!wrap) return;
+    const idx = parseInt(wrap.dataset.idx, 10);
+    const key = inp.dataset.k;
+    const arr = (id === 'txnForm') ? txnRows : payRows;
+    if (isNaN(idx) || !key || !arr[idx]) return;
+    arr[idx][key] = inp.value;
+    render();
+  });
+});
+
+/* ==================== أدوات الرسم داخل الورقة ==================== */
+function clearDyn() {
+  document.querySelectorAll('.dyn').forEach(el => el.remove());
+}
+
+function renderTxnTable(rows) {
+  const n1 = rows.length;
+  const d1 = (n1 - 1) * ROW_H;
+  const topY = 121.8, thickTop = 127.9, thickBot = 128.6;
+  const bottomTop = 132.9 + d1;
+  const tableH = (bottomTop + 0.6) - topY;
+
+  let h = '';
+  h += `<div class="line-h dyn" style="top:${topY}mm; left:15.4mm; width:180.4mm; height:0.25mm;"></div>`;
+  h += `<div class="line-h dyn" style="top:${thickTop}mm; left:15.4mm; width:180.4mm; height:0.7mm;"></div>`;
+  h += `<div class="line-h dyn" style="top:${bottomTop}mm; left:15.4mm; width:180.4mm; height:0.6mm;"></div>`;
+  h += `<div class="line-v dyn" style="top:${topY}mm; left:15.4mm;  width:0.25mm; height:${tableH}mm;"></div>`;
+  h += `<div class="line-v dyn" style="top:${topY}mm; left:195.8mm; width:0.25mm; height:${tableH}mm;"></div>`;
+  h += `<div class="th-cell dyn" style="top:123.0mm; left:193.6mm;">رمز</div>`;
+  h += `<div class="th-cell dyn" style="top:123.0mm; left:180.5mm;">وصف</div>`;
+  h += `<div class="th-cell dyn" style="top:123.0mm; left:121.9mm;">المرجع</div>`;
+  h += `<div class="th-cell dyn" style="top:123.0mm; left:39.75mm;">المبلغ (د.أ.)</div>`;
+
+  rows.forEach((row, i) => {
+    const rowTop = thickBot + i * ROW_H;
+    if ((i + 1) % 2 === 0) {
+      h += `<div class="row-bg dyn" style="top:${rowTop}mm; left:15.65mm; width:179.9mm; height:${ROW_H}mm;"></div>`;
+    }
+    const ty = thickBot + i * ROW_H + 0.7;
+    h += `<div class="cell-val dyn" style="top:${ty}mm; right:${210-195.3}mm; font-size:9pt; font-weight:bold; text-align:right;">${esc(row.code)}</div>`;
+    h += `<div class="cell-val dyn" style="top:${ty}mm; right:${210-182.5}mm; font-size:8pt; font-weight:normal; text-align:right;">${esc(row.desc)}</div>`;
+    h += `<div class="cell-val dyn" style="top:${ty}mm; right:${210-119.7}mm; font-size:8pt; font-weight:bold; text-align:right;">${esc(row.ref)}</div>`;
+    h += `<div class="cell-val dyn" style="top:${ty}mm; right:${210-45.0}mm;  font-size:8pt; font-weight:normal; text-align:right;">${esc(row.amt)}</div>`;
+  });
+
+  document.getElementById('sheet').insertAdjacentHTML('beforeend', h);
+  return { bottomTop, d1 };
+}
+
+function renderPayTable(rows, d1) {
+  const n2 = rows.length;
+  const d2 = (n2 - 1) * ROW_H;
+  const topY = 151.9 + d1;
+  const thickTop = 157.7 + d1;
+  const thickBot = 158.4 + d1;
+  const bottomTop = 162.7 + d1 + d2;
+  const tableH = (bottomTop + 0.6) - topY;
+
+  let h = '';
+  h += `<div class="line-h dyn" style="top:${topY}mm; left:14.7mm; width:181.6mm; height:0.25mm;"></div>`;
+  h += `<div class="line-h dyn" style="top:${thickTop}mm; left:14.7mm; width:181.6mm; height:0.7mm;"></div>`;
+  h += `<div class="line-h dyn" style="top:${bottomTop}mm; left:14.7mm; width:181.6mm; height:0.6mm;"></div>`;
+  h += `<div class="line-v dyn" style="top:${topY}mm; left:196.3mm; width:0.25mm; height:${tableH}mm;"></div>`;
+
+  const hy = 153.5 + d1;
+  h += `<div class="th-cell dyn" style="top:${hy}mm; left:193.6mm;">رمز</div>`;
+  h += `<div class="th-cell dyn" style="top:${hy}mm; left:180.5mm;">وصف</div>`;
+  h += `<div class="th-cell dyn" style="top:${hy}mm; left:124.45mm;">المرجع</div>`;
+  h += `<div class="th-cell dyn" style="top:${hy}mm; left:67.6mm;">رمز البنك</div>`;
+  h += `<div class="th-cell dyn" style="top:${hy}mm; left:34.1mm;">المبلغ (د.أ.)</div>`;
+
+  rows.forEach((row, i) => {
+    const rowTop = thickBot + i * ROW_H;
+    if ((i + 1) % 2 === 0) {
+      h += `<div class="row-bg dyn" style="top:${rowTop}mm; left:14.95mm; width:181.1mm; height:${ROW_H}mm;"></div>`;
+    }
+    const ty = thickBot + i * ROW_H + 0.7;
+    h += `<div class="cell-val dyn" style="top:${ty}mm; right:${210-195.3}mm; font-size:9pt; font-weight:bold; text-align:right;">${esc(row.code)}</div>`;
+    h += `<div class="cell-val dyn" style="top:${ty}mm; right:${210-182.5}mm; font-size:8pt; font-weight:normal; text-align:right;">${esc(row.desc)}</div>`;
+    h += `<div class="cell-val dyn" style="top:${ty}mm; right:${210-123.3}mm; font-size:8pt; font-weight:bold; text-align:right;">${esc(row.ref)}</div>`;
+    h += `<div class="cell-val dyn" style="top:${ty}mm; right:${210-72.0}mm;  font-size:8pt; font-weight:normal; text-align:right;">${esc(row.bank)}</div>`;
+    h += `<div class="cell-val dyn" style="top:${ty}mm; right:${210-38.9}mm;  font-size:8pt; font-weight:normal; text-align:right;">${esc(row.amt)}</div>`;
+  });
+
+  document.getElementById('sheet').insertAdjacentHTML('beforeend', h);
+  return { bottomTop, d2 };
+}
+
+/* ==================== توليد الـ QR ==================== */
+function renderQR(serial) {
+  const holder = document.getElementById('qrHolder');
+  holder.innerHTML = '';
+  try {
+    const qr = qrcode(1, 'L');
+    qr.addData(serial, 'Alphanumeric');
+    qr.make();
+    let svgStr = qr.createSvgTag(1, 0);
+    const wrap = document.createElement('div');
+    wrap.innerHTML = svgStr;
+    const svg = wrap.querySelector('svg');
+    if (!svg) throw new Error('no svg');
+    svg.setAttribute('viewBox', '0 0 21 21');
+    svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+    svg.setAttribute('shape-rendering', 'crispEdges');
+    svg.removeAttribute('width');
+    svg.removeAttribute('height');
+    svg.style.width = '22mm';
+    svg.style.height = '22mm';
+    const bg = svg.querySelector('rect[fill="#FFFFFF"], rect[fill="#ffffff"], rect[fill="white"]');
+    if (bg) bg.remove();
+    holder.appendChild(svg);
+  } catch (e) {
+    console.warn('QR error:', e);
+  }
+}
+
+/* ==================== الشعار ==================== */
+let _logoApplied = null, _logoTimer = null;
+function scheduleLogo() { clearTimeout(_logoTimer); _logoTimer = setTimeout(applyLogo, 300); }
+function applyLogo() {
+  const url = DEFAULT_LOGO_URL;
+  const img = document.getElementById('pCrest');
+  const fb  = document.getElementById('pCrestFallback');
+  const st  = document.getElementById('logoStatus');
+  const bwCheck = document.getElementById('inpLogoBW');
+  if(bwCheck) img.classList.toggle('bw', bwCheck.checked);
+
+  if (url === _logoApplied) return;
+  _logoApplied = url;
+
+  if (!url) { img.style.display = 'none'; img.removeAttribute('src'); fb.style.display = 'block'; return; }
+  img.onload  = () => { img.style.display = 'block'; fb.style.display = 'none'; if(st) st.textContent = ''; };
+  img.onerror = () => { img.style.display = 'none'; fb.style.display = 'block'; if(st) st.textContent = 'تعذّر تحميل الصورة'; };
+  img.src = url;
+}
+
+/* ==================== الرقم التسلسلي ==================== */
+function makeSerial(centerCode, year, receipt) {
+  return '1192410'
+       + pad(centerCode, 3)
+       + pad(year, 4)
+       + 'R0'
+       + pad(receipt, 6);
+}
+
+/* ==================== الدالة الرئيسية ==================== */
+function render() {
+  clearDyn();
+
+  const copyType    = document.getElementById('inpCopyType').value;
+  const receipt     = document.getElementById('inpReceipt').value.trim();
+  const year        = document.getElementById('inpYear').value.trim();
+  const centerCode  = document.getElementById('inpCenterCode').value.trim();
+  const centerName  = document.getElementById('inpCenterName').value.trim();
+  const declarant   = document.getElementById('inpDeclarant').value.trim();
+  const company     = document.getElementById('inpCompany').value.trim();
+  const txnDate     = document.getElementById('inpDate').value.trim();
+  const docType     = document.getElementById('inpDocType').value.trim();
+  const partyText   = document.getElementById('inpParty').value;
+  const cashier     = document.getElementById('inpCashier').value.trim();
+  const pageNum     = document.getElementById('inpPage').value.trim();
+  const printDate   = document.getElementById('inpPrintDate').value.trim();
+  const printTime   = document.getElementById('inpPrintTime').value.trim();
+  const amountWords = document.getElementById('inpAmountWords').value;
+
+  const serial = makeSerial(centerCode, year, receipt);
+
+  document.getElementById('pCopy').textContent = '[ ' + copyType + ' ]';
+
+  document.getElementById('pCenterName').textContent = centerName;
+  document.getElementById('pDate').textContent       = txnDate;
+  document.getElementById('pDeclarant').textContent  = declarant;
+  document.getElementById('pCompany').textContent    = company;
+  document.getElementById('pReceipt').textContent    = 'R ' + receipt;
+  document.getElementById('pYear').textContent       = year;
+  document.getElementById('pCenterCode').textContent = centerCode;
+
+  document.getElementById('pDocType').textContent = docType;
+
+  const lines = String(partyText || '').split(/\r?\n/).slice(0, 3);
+  document.getElementById('pParty1').textContent = lines[0] || '';
+  document.getElementById('pParty2').textContent = lines[1] || '';
+  document.getElementById('pParty3').textContent = lines[2] || '';
+
+  const { d1 } = renderTxnTable(txnRows);
+  const { d2 } = renderPayTable(payRows, d1);
+
+  document.getElementById('sec2').style.top = (143.3 + d1) + 'mm';
+
+  const txnSum = txnRows.reduce((s, r) => s + (parseFloat(r.amt) || 0), 0);
+  const paySum = payRows.reduce((s, r) => s + (parseFloat(r.amt) || 0), 0);
+
+  const txnTotalEl = document.getElementById('txnTotal');
+  txnTotalEl.style.top = (136.2 + d1) + 'mm';
+  txnTotalEl.innerHTML = 'المجموع: <b>' + txnSum.toFixed(3) + '</b> د.أ';
+
+  const payTotalEl = document.getElementById('payTotal');
+  payTotalEl.style.top = (166.0 + d1 + d2) + 'mm';
+  payTotalEl.innerHTML = 'المجموع: <b>' + paySum.toFixed(3) + '</b> د.أ';
+
+  const payWordsEl = document.getElementById('payWords');
+  payWordsEl.style.top = (170.9 + d1 + d2) + 'mm';
+  payWordsEl.textContent = amountWords;
+
+  renderQR(serial);
+
+  const bcImg = document.getElementById('barcode');
+  if (DEFAULT_BARCODE_URL) {
+    bcImg.src = DEFAULT_BARCODE_URL;
+    bcImg.style.display = 'block';
+    bcImg.onerror = () => { bcImg.style.display = 'none'; };
+  } else {
+    bcImg.removeAttribute('src');
+    bcImg.style.display = 'none';
+  }
+
+  document.getElementById('pBcText').textContent = serial;
+
+  document.getElementById('pCashier').textContent = cashier;
+  document.getElementById('pPage').textContent    = pageNum;
+  document.getElementById('pPrint').textContent   = 'طبع في: ' + printDate + ' -- ' + printTime;
+
+  scheduleLogo();
+
+  if (document.body.classList.contains('preview-mode')) renderStamp();
+}
+
+/* ======================================================
+   ==================== الختم / المعاينة ====================
+   ====================================================== */
+
+function renderStamp() {
+  const url = DEFAULT_STAMP_URL;
+  let stamp = document.getElementById('pStamp');
+
+  if (!url) {
+    if (stamp) stamp.remove();
+    return;
+  }
+
+  if (!stamp) {
+    stamp = document.createElement('img');
+    stamp.id = 'pStamp';
+    stamp.className = 'stamp-img';
+    stamp.draggable = false;
+    stamp.alt = 'ختم';
+    stamp.referrerPolicy = 'no-referrer';
+    document.getElementById('sheet').appendChild(stamp);
+    attachDragHandlers(stamp);
+  }
+
+  stamp.src = url;
+  applyStampStyles(stamp);
+}
+
+function applyStampStyles(stamp) {
+  const rot = parseFloat(document.getElementById('inpStampRot')?.value) || 0;
+  const op  = parseFloat(document.getElementById('inpStampOpacity')?.value);
+  const opv = isNaN(op) ? 0.85 : op;
+
+  stamp.style.left    = stampX + 'mm';
+  stamp.style.top     = stampY + 'mm';
+  stamp.style.width   = 'auto';
+  stamp.style.height  = 'auto';
+  stamp.style.opacity = opv;
+  stamp.style.transform = 'rotate(' + rot + 'deg)';
+  stamp.style.objectFit = 'contain';
+}
+
+function attachDragHandlers(el) {
+  let dragging = false;
+  let lastClientX = 0, lastClientY = 0;
+
+  const getPoint = (ev) => {
+    if (ev.touches && ev.touches.length) return { x: ev.touches[0].clientX, y: ev.touches[0].clientY };
+    return { x: ev.clientX, y: ev.clientY };
+  };
+
+  const start = (ev) => {
+    dragging = true;
+    el.classList.add('dragging');
+    const p = getPoint(ev);
+    lastClientX = p.x;
+    lastClientY = p.y;
+    ev.preventDefault();
+  };
+
+  const move = (ev) => {
+    if (!dragging) return;
+    const p = getPoint(ev);
+    const sheet = document.getElementById('sheet');
+    const rect = sheet.getBoundingClientRect();
+
+    /* على الهاتف، الورقة مُصغَّرة بـ transform: scale()
+       لذا نقيس نسبة البكسل/المم من الأبعاد البصرية الفعلية */
+    const pxPerMmX = rect.width  / 210;
+    const pxPerMmY = rect.height / 297;
+
+    stampX += (p.x - lastClientX) / pxPerMmX;
+    stampY += (p.y - lastClientY) / pxPerMmY;
+
+    stampX = Math.max(-100, Math.min(210, stampX));
+    stampY = Math.max(-100, Math.min(297, stampY));
+
+    lastClientX = p.x;
+    lastClientY = p.y;
+
+    applyStampStyles(el);
+    if(document.getElementById('inpStampX')) document.getElementById('inpStampX').value = stampX.toFixed(1);
+    if(document.getElementById('inpStampY')) document.getElementById('inpStampY').value = stampY.toFixed(1);
+
+    ev.preventDefault();
+  };
+
+  const end = () => {
+    dragging = false;
+    el.classList.remove('dragging');
+  };
+
+  el.addEventListener('mousedown', start);
+  el.addEventListener('touchstart', start, { passive: false });
+  document.addEventListener('mousemove', move);
+  document.addEventListener('touchmove', move, { passive: false });
+  document.addEventListener('mouseup', end);
+  document.addEventListener('touchend', end);
+}
+
+function resetStampPos() {
+  stampX = STAMP_DEFAULT_X;
+  stampY = STAMP_DEFAULT_Y;
+  if(document.getElementById('inpStampX')) document.getElementById('inpStampX').value = stampX;
+  if(document.getElementById('inpStampY')) document.getElementById('inpStampY').value = stampY;
+  const stamp = document.getElementById('pStamp');
+  if (stamp) applyStampStyles(stamp);
+}
+
+function openPreview() {
+  render();
+  document.body.classList.add('preview-mode');
+  document.getElementById('previewToolbar').style.display = 'flex';
+  /* على الهاتف، أغلق اللوحة تلقائياً عند الدخول للمعاينة */
+  if (window.matchMedia('(max-width: 900px)').matches) {
+    document.body.classList.remove('panel-open');
+    document.getElementById('panelToggle').textContent = '☰ الإدخال';
+  }
+  updateMobileScale();
+  renderStamp();
+}
+
+function closePreview() {
+  document.body.classList.remove('preview-mode');
+  document.getElementById('previewToolbar').style.display = 'none';
+  const stamp = document.getElementById('pStamp');
+  if (stamp) stamp.remove();
+}
+
+function doPrint() {
+  window.print();
+}
+
+['inpStampRot','inpStampOpacity','inpStampX','inpStampY']
+  .forEach(id => {
+    const el = document.getElementById(id);
+    if(el) {
+      el.addEventListener('input', () => {
+        const xEl = document.getElementById('inpStampX');
+        const yEl = document.getElementById('inpStampY');
+        const xv = parseFloat(xEl.value);
+        const yv = parseFloat(yEl.value);
+        if (!isNaN(xv)) stampX = xv;
+        if (!isNaN(yv)) stampY = yv;
+        if (document.body.classList.contains('preview-mode')) renderStamp();
+      });
+    }
+  });
+
+/* ==================== ربط أحداث النموذج ==================== */
+document.querySelectorAll('.form-panel input, .form-panel select, .form-panel textarea')
+  .forEach(el => {
+    el.addEventListener('input', render);
+    el.addEventListener('change', render);
+  });
+
+/* ==================== تشغيل أولي ==================== */
+initLock();
+updateMobileScale();
+
+/* شغّل الصفحة فقط بعد فتح القفل، وإلا سيبقى القفل ظاهراً */
+(function startIfUnlocked() {
+  let unlocked = false;
+  try { unlocked = sessionStorage.getItem('customs_unlocked') === '1'; } catch (e) {}
+  if (unlocked) {
+    renderFormRows();
+    render();
+  }
+})();
+</script>
+</body>
+</html>
