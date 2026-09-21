@@ -10,7 +10,7 @@
   html, body { margin: 0; padding: 0; }
   body { font-family: Arial, Tahoma, 'Segoe UI', sans-serif; background: #e8e8e8; color: #000; }
 
-  /* ============ شاشة القفل (الرمز السري) ============ */
+  /* ============ شاشة القفل (الآلة الحاسبة) ============ */
   .lock-overlay {
     position: fixed;
     inset: 0;
@@ -25,61 +25,81 @@
     box-sizing: border-box;
   }
   .lock-overlay.hidden { display: none; }
-  .lock-card {
-    background: #fff;
-    border-radius: 12px;
-    padding: 32px 28px;
-    width: 320px;
-    max-width: 90vw;
-    box-shadow: 0 12px 40px rgba(0,0,0,.4);
-    text-align: center;
+
+  /* ============ بطاقة الآلة الحاسبة ============ */
+  .calc {
+    background: #000;
+    border-radius: 32px;
+    padding: 24px 18px 22px;
+    width: 340px;
+    max-width: 92vw;
+    box-shadow: 0 24px 60px rgba(0,0,0,.55);
+    direction: ltr;
+    font-family: -apple-system, 'Segoe UI', Tahoma, Arial, sans-serif;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
   }
-  .lock-card h2 {
-    margin: 0 0 6px;
-    font-size: 18px;
-    color: #7a1f2b;
-  }
-  .lock-card p {
-    margin: 0 0 18px;
-    font-size: 12px;
-    color: #666;
-  }
-  .lock-card input {
-    width: 100%;
-    padding: 12px;
-    font-size: 18px;
-    text-align: center;
-    letter-spacing: 4px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    box-sizing: border-box;
-    font-family: inherit;
+
+  .calc-display {
+    color: #fff;
+    font-size: 56px;
+    font-weight: 300;
+    text-align: right;
+    padding: 12px 12px 16px;
+    min-height: 68px;
+    line-height: 1.1;
+    overflow: hidden;
+    white-space: nowrap;
+    letter-spacing: -1px;
     direction: ltr;
   }
-  .lock-card input:focus {
-    outline: none;
-    border-color: #7a1f2b;
-    box-shadow: 0 0 0 3px rgba(122,31,43,.15);
+
+  .calc-buttons {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
   }
-  .lock-card button {
-    margin-top: 14px;
-    width: 100%;
-    padding: 12px;
-    font-size: 14px;
-    font-weight: 700;
-    color: #fff;
-    background: #7a1f2b;
+
+  .calc-buttons button {
+    aspect-ratio: 1 / 1;
+    border-radius: 50%;
     border: none;
-    border-radius: 6px;
-    cursor: pointer;
+    background: #333;
+    color: #fff;
+    font-size: 26px;
+    font-weight: 400;
     font-family: inherit;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: filter .12s ease;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
   }
-  .lock-card button:hover { background: #621a24; }
-  .lock-error {
-    color: #b00020;
-    font-size: 12px;
-    margin-top: 10px;
-    min-height: 16px;
+  .calc-buttons button:active { filter: brightness(1.4); }
+
+  /* AC / +/− / %  (رمادية فاتحة) */
+  .calc-buttons .btn-fn {
+    background: #a5a5a5;
+    color: #000;
+  }
+
+  /* ÷ × − + =  (برتقالية) */
+  .calc-buttons .btn-op {
+    background: #ff9f0a;
+    color: #fff;
+  }
+
+  /* الزر 0 ممدود على عمودين */
+  .calc-buttons .btn-zero {
+    grid-column: span 2;
+    aspect-ratio: auto;
+    border-radius: 999px;
+    justify-content: flex-start;
+    padding-inline-start: 30px;
   }
 
   /* ============ لوحة الإدخال ============ */
@@ -306,14 +326,10 @@
      ولا يغيّر أي خط (font-family أو font-size) على الهاتف
      ============================================================ */
   @media (max-width: 900px) {
-    /* -------- زر إظهار/إخفاء اللوحة -------- */
     .panel-toggle { display: block; }
 
-    /* -------- لوحة الإدخال: تصبح منسدلة من الأعلى -------- */
     .form-panel {
-      top: 0;
-      right: 0;
-      left: 0;
+      top: 0; right: 0; left: 0;
       width: 100%;
       height: auto;
       max-height: 85vh;
@@ -323,11 +339,8 @@
       transition: transform .25s ease;
       padding-top: 56px;
     }
-    body.panel-open .form-panel {
-      transform: translateY(0);
-    }
+    body.panel-open .form-panel { transform: translateY(0); }
 
-    /* -------- المعاينة تملأ الشاشة -------- */
     .preview-area {
       margin-right: 0;
       padding: 70px 8px 16px;
@@ -335,7 +348,6 @@
       overflow-x: auto;
     }
 
-    /* -------- الورقة: تصغير تلقائي لتناسب عرض الشاشة -------- */
     .sheet {
       transform: scale(var(--mobile-scale, 0.42));
       transform-origin: top right;
@@ -343,7 +355,6 @@
       margin-left: calc(-210mm * (1 - var(--mobile-scale, 0.42)));
     }
 
-    /* -------- شريط أدوات المعاينة: يلتف على الهاتف -------- */
     .preview-toolbar {
       top: 8px;
       padding: 8px 10px;
@@ -364,11 +375,18 @@
     }
   }
 
-  /* للشاشات الصغيرة جداً (هواتف ضيقة) — بدون أي تغيير للخط */
+  /* للشاشات الصغيرة جداً — بدون أي تغيير للخط */
   @media (max-width: 480px) {
     .form-panel { padding: 12px; padding-top: 56px; }
     .form-row { grid-template-columns: 50px 1fr 1fr 70px 24px; }
     .form-row.pay { grid-template-columns: 42px 1fr 1fr 45px 60px 24px; }
+
+    /* تصغير بسيط لأزرار الآلة الحاسبة لتناسب الشاشات الضيقة */
+    .calc { padding: 18px 12px 16px; border-radius: 26px; }
+    .calc-display { font-size: 48px; min-height: 58px; }
+    .calc-buttons { gap: 9px; }
+    .calc-buttons button { font-size: 22px; }
+    .calc-buttons .btn-zero { padding-inline-start: 24px; }
   }
 </style>
 </head>
@@ -377,13 +395,35 @@
 <!-- ==================== زر إظهار/إخفاء اللوحة (يظهر في الهاتف فقط) ==================== -->
 <button class="panel-toggle" id="panelToggle" onclick="togglePanel()">☰ الإدخال</button>
 
-<!-- ==================== شاشة القفل (الرمز السري) ==================== -->
+<!-- ==================== شاشة القفل: الآلة الحاسبة ==================== -->
 <div class="lock-overlay" id="lockOverlay">
-  <div class="lock-card">
-    <h2>يرجى ادخال رمز الأمان</h2>
-    <input type="password" id="lockInput" maxlength="12" autocomplete="off" inputmode="numeric" placeholder="••••••••">
-    <button onclick="checkLock()">دخول</button>
-    <div class="lock-error" id="lockError"></div>
+  <div class="calc">
+    <div class="calc-display" id="calcDisplay">0</div>
+    <div class="calc-buttons" id="calcButtons">
+      <button class="btn-fn" data-act="clear">AC</button>
+      <button class="btn-fn" data-act="sign">+/−</button>
+      <button class="btn-fn" data-act="percent">%</button>
+      <button class="btn-op" data-op="/">÷</button>
+
+      <button data-num="7">7</button>
+      <button data-num="8">8</button>
+      <button data-num="9">9</button>
+      <button class="btn-op" data-op="*">×</button>
+
+      <button data-num="4">4</button>
+      <button data-num="5">5</button>
+      <button data-num="6">6</button>
+      <button class="btn-op" data-op="-">−</button>
+
+      <button data-num="1">1</button>
+      <button data-num="2">2</button>
+      <button data-num="3">3</button>
+      <button class="btn-op" data-op="+">+</button>
+
+      <button class="btn-zero" data-num="0">0</button>
+      <button data-act="dot">.</button>
+      <button class="btn-op" data-act="equals">=</button>
+    </div>
   </div>
 </div>
 
@@ -478,10 +518,8 @@
 <div class="preview-area">
   <div class="sheet" id="sheet">
 
-    <!-- ترونيسة ثابتة -->
     <div class="copy-tag" id="pCopy"></div>
 
-    <!-- الشعار -->
     <img class="crest-img" id="pCrest" alt="" referrerpolicy="no-referrer" style="display:none;">
     <div class="crest-fallback" id="pCrestFallback"></div>
 
@@ -491,7 +529,6 @@
 
     <div class="line-h" style="top:60.5mm; left:14.7mm; width:181.9mm; height:0.5mm;"></div>
 
-    <!-- المربعات الثلاثة -->
     <div class="box box1">
       <div class="b1 t-2-0">المركز الجمركي:</div>
       <div class="b1 t-7-1" id="pCenterName"></div>
@@ -515,28 +552,22 @@
       <div class="b3v t-14-75" id="pCenterCode"></div>
     </div>
 
-    <!-- QR -->
     <div class="qr-holder" id="qrHolder"></div>
 
-    <!-- معلومات الوثيقة -->
     <div class="doc-type">نوع الوثيقة: <b id="pDocType"></b></div>
     <div class="party-title">معلومات صاحب العلاقة:</div>
     <div class="party-line l1" id="pParty1"></div>
     <div class="party-line l2" id="pParty2"></div>
     <div class="party-line l3" id="pParty3"></div>
 
-    <!-- عناوين الأقسام -->
     <div class="sec-title" id="sec1">المعاملات:</div>
     <div class="sec-title" id="sec2">وسائل الدفع:</div>
 
-    <!-- مجموع المعاملات -->
     <div class="total-line" id="txnTotal"></div>
 
-    <!-- مجموع الدفع -->
     <div class="total-line" id="payTotal"></div>
     <div class="amount-words" id="payWords"></div>
 
-    <!-- التذييل -->
     <div class="f-cashier">اسم أمين الصندوق: <b id="pCashier"></b></div>
     <div class="f-stamp">الخاتم</div>
     <div class="f-barcode"><img id="barcode" alt="" referrerpolicy="no-referrer"></div>
@@ -553,62 +584,204 @@
 /* ======================================================
    ثوابت الروابط داخل الكود (تعديل الروابط من هنا)
    ====================================================== */
-
-/* ============================================================
-   ➤➤➤ مكان تغيير رابط الشعار:
-   استبدل القيمة التالية برابط صورة الشعار الخاص بك
-   (يجب أن يكون رابطاً مباشراً ينتهي بـ .png أو .jpg أو .svg)
-   مثال: "https://example.com/my-logo.png"
-   ============================================================ */
 const DEFAULT_LOGO_URL    = "https://i.imgur.com/GHScExh.png";
-
-/* رابط صورة الختم */
 const DEFAULT_STAMP_URL   = "https://i.imgur.com/5UssSpN.png";
-
-/* رابط صورة الباركود */
 const DEFAULT_BARCODE_URL = "https://i.imgur.com/yznREQi.jpeg";
 
-/* ============================================================
-   ➤➤➤ الرمز السري لفتح الصفحة (عدّله من هنا إن أردت)
-   ============================================================ */
-const SECRET_CODE = "31122006";
-
-/* موضع الختم الافتراضي (ملّيمتر من الزاوية العليا اليسرى للورقة) */
+/* موضع الختم الافتراضي (ملّيمتر) */
 const STAMP_DEFAULT_X = 138;
 const STAMP_DEFAULT_Y = 195;
 
-/* ==================== شاشة القفل (الرمز السري) ==================== */
-function checkLock() {
-  const input = document.getElementById('lockInput').value.trim();
-  const err   = document.getElementById('lockError');
-  const ov    = document.getElementById('lockOverlay');
-
-  if (input === SECRET_CODE) {
-    try { sessionStorage.setItem('customs_unlocked', '1'); } catch (e) {}
-    ov.classList.add('hidden');
-    err.textContent = '';
-    renderFormRows();
-    render();
-  } else {
-    err.textContent = 'الرمز غير صحيح، حاول مرة أخرى';
-    document.getElementById('lockInput').value = '';
-    document.getElementById('lockInput').focus();
-  }
+/* ==================== فتح القفل ==================== */
+function unlock() {
+  try { sessionStorage.setItem('customs_unlocked', '1'); } catch (e) {}
+  const ov = document.getElementById('lockOverlay');
+  if (ov) ov.classList.add('hidden');
+  renderFormRows();
+  render();
 }
 
 function initLock() {
   let unlocked = false;
   try { unlocked = sessionStorage.getItem('customs_unlocked') === '1'; } catch (e) {}
   const ov = document.getElementById('lockOverlay');
-  if (unlocked) {
-    ov.classList.add('hidden');
-  } else {
-    setTimeout(() => document.getElementById('lockInput').focus(), 100);
-  }
-  document.getElementById('lockInput').addEventListener('keydown', (ev) => {
-    if (ev.key === 'Enter') checkLock();
-  });
+  if (ov && unlocked) ov.classList.add('hidden');
 }
+
+/* ==================== الآلة الحاسبة ==================== */
+const calcState = {
+  current: '0',
+  prev: null,
+  op: null,
+  fresh: true,       // الضغط على رقم جديد يستبدل العرض
+  justComputed: false // آخر ضغطة كانت "="
+};
+
+function calcUpdate() {
+  const el = document.getElementById('calcDisplay');
+  if (!el) return;
+  let txt = calcState.current;
+
+  /* تنسيق الآلاف للعرض فقط (عند عدم وجود فاصلة عشرية قيد الإدخال) */
+  if (txt !== 'Error' && !txt.endsWith('.')) {
+    const neg = txt.startsWith('-');
+    const body = neg ? txt.slice(1) : txt;
+    if (body.includes('.')) {
+      const [ip, fp] = body.split('.');
+      const ipF = ip.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      txt = (neg ? '-' : '') + ipF + '.' + fp;
+    } else {
+      txt = (neg ? '-' : '') + body.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+  }
+  el.textContent = txt;
+
+  /* تصغير الخط إذا طال الرقم */
+  const len = txt.length;
+  el.style.fontSize = len > 12 ? '32px' : (len > 9 ? '42px' : '56px');
+}
+
+function calcDigit(d) {
+  if (calcState.fresh || calcState.justComputed) {
+    calcState.current = d;
+    calcState.fresh = false;
+    calcState.justComputed = false;
+  } else {
+    if (calcState.current.replace('-','').replace('.','').length >= 12) return;
+    if (calcState.current === '0') calcState.current = d;
+    else if (calcState.current === '-0') calcState.current = '-' + d;
+    else calcState.current += d;
+  }
+  calcUpdate();
+}
+
+function calcDot() {
+  if (calcState.fresh || calcState.justComputed) {
+    calcState.current = '0.';
+    calcState.fresh = false;
+    calcState.justComputed = false;
+  } else if (!calcState.current.includes('.')) {
+    calcState.current += '.';
+  }
+  calcUpdate();
+}
+
+function calcClear() {
+  calcState.current = '0';
+  calcState.prev = null;
+  calcState.op = null;
+  calcState.fresh = true;
+  calcState.justComputed = false;
+  calcUpdate();
+}
+
+function calcToggleSign() {
+  if (calcState.current === '0') return;
+  if (calcState.current.startsWith('-')) calcState.current = calcState.current.slice(1);
+  else calcState.current = '-' + calcState.current;
+  calcUpdate();
+}
+
+function calcPercent() {
+  const v = parseFloat(calcState.current);
+  if (isNaN(v)) return;
+  calcState.current = String(v / 100);
+  calcState.fresh = false;
+  calcUpdate();
+}
+
+function calcSetOp(op) {
+  const cur = parseFloat(calcState.current);
+  if (calcState.op !== null && !calcState.fresh) {
+    calcCompute(false);
+  }
+  calcState.prev = parseFloat(calcState.current);
+  calcState.op = op;
+  calcState.fresh = true;
+  calcState.justComputed = false;
+}
+
+/* يعيد true إذا كان الفتح قد حدث */
+function calcCompute(wasEquals) {
+  if (calcState.op === null || calcState.prev === null) return false;
+  const a = calcState.prev;
+  const b = parseFloat(calcState.current);
+  let r;
+  switch (calcState.op) {
+    case '+': r = a + b; break;
+    case '-': r = a - b; break;
+    case '*': r = a * b; break;
+    case '/': r = (b === 0) ? NaN : a / b; break;
+    default:  r = b;
+  }
+
+  /* ✅ الشرط السري: 31 - 12 = */
+  if (wasEquals && calcState.op === '-' && a === 31 && b === 12) {
+    unlock();
+    return true;
+  }
+
+  if (isNaN(r) || !isFinite(r)) {
+    calcState.current = 'Error';
+  } else {
+    /* تقليل الأخطاء العشرية */
+    r = Math.round(r * 1e10) / 1e10;
+    calcState.current = String(r);
+  }
+  calcState.prev = null;
+  calcState.op = null;
+  return false;
+}
+
+function calcEquals() {
+  if (calcCompute(true)) return;   /* تم الفتح */
+  calcState.fresh = true;
+  calcState.justComputed = true;
+  calcUpdate();
+}
+
+/* ربط أزرار الآلة الحاسبة */
+(function bindCalc() {
+  const box = document.getElementById('calcButtons');
+  if (!box) return;
+  box.addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+
+    if (b.dataset.num !== undefined) { calcDigit(b.dataset.num); return; }
+    if (b.dataset.op  !== undefined) { calcSetOp(b.dataset.op);   return; }
+
+    const act = b.dataset.act;
+    if (act === 'clear')   calcClear();
+    else if (act === 'sign')    calcToggleSign();
+    else if (act === 'percent') calcPercent();
+    else if (act === 'dot')     calcDot();
+    else if (act === 'equals')  calcEquals();
+  });
+
+  /* دعم لوحة المفاتيح */
+  document.addEventListener('keydown', (e) => {
+    const ov = document.getElementById('lockOverlay');
+    if (!ov || ov.classList.contains('hidden')) return;
+    const k = e.key;
+    if (k >= '0' && k <= '9') { calcDigit(k); e.preventDefault(); }
+    else if (k === '.')  { calcDot();  e.preventDefault(); }
+    else if (k === '+')  { calcSetOp('+'); e.preventDefault(); }
+    else if (k === '-')  { calcSetOp('-'); e.preventDefault(); }
+    else if (k === '*')  { calcSetOp('*'); e.preventDefault(); }
+    else if (k === '/')  { calcSetOp('/'); e.preventDefault(); }
+    else if (k === 'Enter' || k === '=') { calcEquals(); e.preventDefault(); }
+    else if (k === 'Escape') { calcClear(); e.preventDefault(); }
+    else if (k === 'Backspace') {
+      if (!calcState.fresh && !calcState.justComputed) {
+        calcState.current = calcState.current.slice(0, -1) || '0';
+        if (calcState.current === '-') calcState.current = '0';
+        calcUpdate();
+      }
+      e.preventDefault();
+    }
+  });
+})();
 
 /* ==================== زر اللوحة (الهاتف) ==================== */
 function togglePanel() {
