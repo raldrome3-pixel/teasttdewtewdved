@@ -1249,23 +1249,21 @@ function downloadPDF() {
   const receiptNum = (document.getElementById('inpReceipt').value || '').trim();
   const filename = 'وصل-الجمارك-' + (receiptNum || '') + '.pdf';
 
+  /* تعديل إعدادات الـ PDF لضمان بقائه صفحة واحدة */
   const opt = {
     margin: 0,
     filename: filename,
-    image: { type: 'jpeg', quality: 0.98 },
+    image: { type: 'jpeg', quality: 1 },
     html2canvas: {
-      scale: 3,               /* دقة عالية */
-      useCORS: true,          /* للسماح بصور imgur */
-      allowTaint: true,       /* احتياطي */
+      scale: 3,               
+      useCORS: true,          
+      allowTaint: true,       
       backgroundColor: '#ffffff',
       logging: false,
       scrollX: 0,
-      scrollY: 0,
-      windowWidth:  sheet.scrollWidth,
-      windowHeight: sheet.scrollHeight
+      scrollY: 0
     },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-    pagebreak: { mode: 'avoid-all' }
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
   };
 
   if (btn) {
@@ -1283,9 +1281,14 @@ function downloadPDF() {
     }
   };
 
-  /* الانتظار قليلاً حتى تستقر الصور قبل الالتقاط */
+  /* التقاط الصفحة وحذف أي صفحات فارغة زائدة قد تتولد بسبب الحواف */
   setTimeout(() => {
-    html2pdf().set(opt).from(sheet).save()
+    html2pdf().set(opt).from(sheet).toPdf().get('pdf').then(function(pdf) {
+      const totalPages = pdf.internal.getNumberOfPages();
+      for (let i = totalPages; i > 1; i--) {
+        pdf.deletePage(i);
+      }
+    }).save()
       .then(restore)
       .catch(err => {
         console.error('PDF error:', err);
