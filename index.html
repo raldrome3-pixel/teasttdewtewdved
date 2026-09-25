@@ -284,6 +284,51 @@
   .preview-toolbar .btn-close { background: #eee; color: #333; }
   .preview-toolbar .btn-close:hover { background: #ddd; }
 
+  /* ============================================================
+     ============ شريط الأدوات السفلي (الهاتف فقط) ============
+     ============================================================ */
+  .mobile-bottom-bar {
+    display: none;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 600;
+    background: #ffffff;
+    border-top: 1px solid #ddd;
+    box-shadow: 0 -6px 20px rgba(0,0,0,.16);
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    box-sizing: border-box;
+    font-family: inherit;
+  }
+  .mobile-bottom-bar button {
+    flex: 1 1 auto;
+    min-width: 86px;
+    padding: 11px 12px;
+    border: none;
+    border-radius: 7px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .mobile-bottom-bar .btn-preview { background: #7a1f2b; color: #fff; }
+  .mobile-bottom-bar .btn-preview:active { background: #621a24; }
+  .mobile-bottom-bar .btn-print { background: #7a1f2b; color: #fff; }
+  .mobile-bottom-bar .btn-print:active { background: #621a24; }
+  .mobile-bottom-bar .btn-reset { background: #f4e9ea; color: #7a1f2b; }
+  .mobile-bottom-bar .btn-reset:active { background: #ebd6d8; }
+  .mobile-bottom-bar .btn-close { background: #eee; color: #333; }
+  .mobile-bottom-bar .btn-close:active { background: #ddd; }
+
+  /* إظهار الأزرار حسب الحالة */
+  body.preview-mode .mobile-bottom-bar .only-edit { display: none; }
+  body:not(.preview-mode) .mobile-bottom-bar .only-preview { display: none; }
+
   /* ============ التذييل ============ */
   .f-cashier { top: 252.7mm; right: 13.9mm; font-size: 8pt; white-space: nowrap; }
   .f-stamp   { top: 253.0mm; left: 44.2mm; font-size: 8pt; white-space: nowrap; }
@@ -309,6 +354,7 @@
     }
     .form-panel { display: none !important; }
     .preview-toolbar { display: none !important; }
+    .mobile-bottom-bar { display: none !important; }
     .lock-overlay { display: none !important; }
     .crest-fallback { display: none !important; }
     .panel-toggle { display: none !important; }
@@ -354,7 +400,7 @@
 
     .preview-area {
       margin-right: 0;
-      padding: 70px 8px 16px;
+      padding: 70px 8px 100px;   /* مساحة سفلية حتى لا يغطي الشريط الورقة */
       justify-content: flex-start;
       overflow-x: auto;
     }
@@ -366,24 +412,11 @@
       margin-left: calc(-210mm * (1 - var(--mobile-scale, 0.42)));
     }
 
-    .preview-toolbar {
-      top: 8px;
-      padding: 8px 10px;
-      gap: 6px;
-      flex-wrap: wrap;
-      justify-content: center;
-      max-width: calc(100vw - 16px);
-    }
-    .preview-toolbar .hint {
-      display: block;
-      width: 100%;
-      text-align: center;
-      border-inline-end: none;
-      padding-inline-end: 0;
-      border-bottom: 1px solid #eee;
-      padding-bottom: 6px;
-      margin-bottom: 4px;
-    }
+    /* إخفاء الشريط العلوي في الهاتف (استُبدل بالشريط السفلي) */
+    .preview-toolbar { display: none !important; }
+
+    /* إظهار الشريط السفلي في الهاتف */
+    .mobile-bottom-bar { display: flex; }
   }
 
   /* للشاشات الصغيرة جداً — بدون أي تغيير للخط */
@@ -397,6 +430,8 @@
     .calc-buttons { gap: 9px; }
     .calc-buttons button { font-size: 22px; }
     .calc-buttons .btn-zero { padding-inline-start: 24px; }
+
+    .mobile-bottom-bar button { font-size: 12px; min-width: 70px; padding: 10px 8px; }
   }
 </style>
 </head>
@@ -437,12 +472,20 @@
   </div>
 </div>
 
-<!-- ==================== شريط أدوات المعاينة ==================== -->
+<!-- ==================== شريط أدوات المعاينة (سطح المكتب) ==================== -->
 <div class="preview-toolbar" id="previewToolbar">
   <span class="hint">اسحب الختم على الورقة لتحديد موقعه</span>
   <button class="btn-reset" onclick="resetStampPos()">إعادة تعيين الموقع</button>
   <button class="btn-print" onclick="doPrint()">🖨️ طباعة</button>
   <button class="btn-close" onclick="closePreview()">✕ إنهاء المعاينة</button>
+</div>
+
+<!-- ==================== شريط الأدوات السفلي (الهاتف) ==================== -->
+<div class="mobile-bottom-bar" id="mobileBottomBar">
+  <button class="btn-preview only-edit"    onclick="openPreview()">👁️ معاينة</button>
+  <button class="btn-print   only-preview" onclick="doPrint()">🖨️ طباعة</button>
+  <button class="btn-reset   only-preview" onclick="resetStampPos()">↺ إعادة تعيين الختم</button>
+  <button class="btn-close   only-preview" onclick="closePreview()">✕ إنهاء المعاينة</button>
 </div>
 
 <!-- ==================== لوحة الإدخال ==================== -->
@@ -1219,11 +1262,11 @@ function openPreview() {
   renderStamp();
 }
 
+/* ✅ إنهاء المعاينة: لا يحذف الختم أبداً */
 function closePreview() {
   document.body.classList.remove('preview-mode');
   document.getElementById('previewToolbar').style.display = 'none';
-  const stamp = document.getElementById('pStamp');
-  if (stamp) stamp.remove();
+  /* ملاحظة: تم إلغاء حذف الختم — يبقى ظاهراً في مكانه */
 }
 
 function doPrint() {
