@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>وصل الجمارك الأردنية</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   /* ============ إعدادات عامة ============ */
   html, body { margin: 0; padding: 0; }
@@ -239,6 +241,55 @@
   }
   .stamp-img.dragging { cursor: grabbing; }
 
+  /* ============================================================
+     ============ غلاف الختم + مقبض التحجيم (جديد) ============
+     ============================================================ */
+  .stamp-wrapper {
+    position: absolute;
+    pointer-events: auto;
+    cursor: move;
+    z-index: 6;
+    user-select: none;
+    -webkit-user-drag: none;
+    touch-action: none;
+    line-height: 0;
+  }
+  .stamp-wrapper.dragging { cursor: grabbing; }
+
+  /* الصورة داخل الغلاف: تملأ العرض وتحفظ النسبة */
+  .stamp-wrapper .stamp-img {
+    position: static;
+    display: block;
+    width: 100%;
+    height: auto;
+    pointer-events: none;
+    cursor: inherit;
+    user-select: none;
+    -webkit-user-drag: none;
+    mix-blend-mode: multiply;
+    touch-action: none;
+  }
+
+  /* مقبض التحجيم: دائرة صغيرة في الزاوية السفلية اليمنى */
+  .stamp-resize-handle {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    background: #7a1f2b;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    bottom: -7px;
+    right: -7px;
+    cursor: nwse-resize;
+    z-index: 7;
+    box-shadow: 0 1px 4px rgba(0,0,0,.5);
+    touch-action: none;
+    box-sizing: border-box;
+  }
+  .stamp-resize-handle.resizing {
+    background: #621a24;
+  }
+
   /* ============ شريط أدوات المعاينة ============ */
   .preview-toolbar {
     position: fixed;
@@ -284,6 +335,11 @@
   .preview-toolbar .btn-close { background: #eee; color: #333; }
   .preview-toolbar .btn-close:hover { background: #ddd; }
 
+  /* ============ زر تحميل PDF ============ */
+  .preview-toolbar .btn-pdf { background: #7a1f2b; color: #fff; }
+  .preview-toolbar .btn-pdf:hover { background: #621a24; }
+  .preview-toolbar .btn-pdf:disabled { opacity: .6; cursor: wait; }
+
   /* ============================================================
      ============ شريط الأدوات السفلي (الهاتف فقط) ============
      ============================================================ */
@@ -325,6 +381,10 @@
   .mobile-bottom-bar .btn-close { background: #eee; color: #333; }
   .mobile-bottom-bar .btn-close:active { background: #ddd; }
 
+  .mobile-bottom-bar .btn-pdf { background: #7a1f2b; color: #fff; }
+  .mobile-bottom-bar .btn-pdf:active { background: #621a24; }
+  .mobile-bottom-bar .btn-pdf:disabled { opacity: .6; }
+
   /* إظهار الأزرار حسب الحالة */
   body.preview-mode .mobile-bottom-bar .only-edit { display: none; }
   body:not(.preview-mode) .mobile-bottom-bar .only-preview { display: none; }
@@ -358,6 +418,7 @@
     .lock-overlay { display: none !important; }
     .crest-fallback { display: none !important; }
     .panel-toggle { display: none !important; }
+    .stamp-resize-handle { display: none !important; }
     .preview-area {
       margin: 0 !important;
       padding: 0 !important;
@@ -400,7 +461,7 @@
 
     .preview-area {
       margin-right: 0;
-      padding: 70px 8px 100px;   /* مساحة سفلية حتى لا يغطي الشريط الورقة */
+      padding: 70px 8px 100px;
       justify-content: flex-start;
       overflow-x: auto;
     }
@@ -412,14 +473,10 @@
       margin-left: calc(-210mm * (1 - var(--mobile-scale, 0.42)));
     }
 
-    /* إخفاء الشريط العلوي في الهاتف (استُبدل بالشريط السفلي) */
     .preview-toolbar { display: none !important; }
-
-    /* إظهار الشريط السفلي في الهاتف */
     .mobile-bottom-bar { display: flex; }
   }
 
-  /* للشاشات الصغيرة جداً — بدون أي تغيير للخط */
   @media (max-width: 480px) {
     .form-panel { padding: 12px; padding-top: 56px; }
     .form-row { grid-template-columns: 50px 1fr 1fr 70px 24px; }
@@ -474,9 +531,10 @@
 
 <!-- ==================== شريط أدوات المعاينة (سطح المكتب) ==================== -->
 <div class="preview-toolbar" id="previewToolbar">
-  <span class="hint">اسحب الختم على الورقة لتحديد موقعه</span>
-  <button class="btn-reset" onclick="resetStampPos()">إعادة تعيين الموقع</button>
+  <span class="hint">اسحب الختم لتحريكه، واسحب المقبض الأحمر لتحجيمه</span>
+  <button class="btn-reset" onclick="resetStampPos()">إعادة تعيين الموقع/الحجم/الدوران</button>
   <button class="btn-print" onclick="doPrint()">🖨️ طباعة</button>
+  <button class="btn-pdf"   onclick="downloadPDF()">⬇️ تحميل PDF</button>
   <button class="btn-close" onclick="closePreview()">✕ إنهاء المعاينة</button>
 </div>
 
@@ -484,6 +542,7 @@
 <div class="mobile-bottom-bar" id="mobileBottomBar">
   <button class="btn-preview only-edit"    onclick="openPreview()">👁️ معاينة</button>
   <button class="btn-print   only-preview" onclick="doPrint()">🖨️ طباعة</button>
+  <button class="btn-pdf     only-preview" onclick="downloadPDF()">⬇️ تحميل PDF</button>
   <button class="btn-reset   only-preview" onclick="resetStampPos()">↺ إعادة تعيين الختم</button>
   <button class="btn-close   only-preview" onclick="closePreview()">✕ إنهاء المعاينة</button>
 </div>
@@ -503,6 +562,10 @@
   <div class="row2">
     <div><label>موقع الختم X (مم)</label><input type="text" id="inpStampX" value="138"></div>
     <div><label>موقع الختم Y (مم)</label><input type="text" id="inpStampY" value="195"></div>
+  </div>
+  <!-- ✅ حقل حجم الختم (جديد) -->
+  <div class="row2">
+    <div><label>حجم الختم (مم)</label><input type="text" id="inpStampSize" value="40"></div>
   </div>
 
   <h2>بيانات الوصل</h2>
@@ -644,6 +707,9 @@ const DEFAULT_BARCODE_URL = "https://i.imgur.com/yznREQi.jpeg";
 /* موضع الختم الافتراضي (ملّيمتر) */
 const STAMP_DEFAULT_X = 138;
 const STAMP_DEFAULT_Y = 195;
+/* ✅ حجم الختم الافتراضي (ملّيمتر) + دورانه الافتراضي (درجات) */
+const STAMP_DEFAULT_SIZE = 40;
+const STAMP_DEFAULT_ROT  = -30;
 
 /* ==================== فتح القفل ==================== */
 function unlock() {
@@ -1149,40 +1215,60 @@ function render() {
 
 function renderStamp() {
   const url = DEFAULT_STAMP_URL;
-  let stamp = document.getElementById('pStamp');
+  let wrapper = document.getElementById('pStampWrapper');
 
   if (!url) {
-    if (stamp) stamp.remove();
+    if (wrapper) wrapper.remove();
     return;
   }
 
-  if (!stamp) {
-    stamp = document.createElement('img');
-    stamp.id = 'pStamp';
-    stamp.className = 'stamp-img';
-    stamp.draggable = false;
-    stamp.alt = 'ختم';
-    stamp.referrerPolicy = 'no-referrer';
-    document.getElementById('sheet').appendChild(stamp);
-    attachDragHandlers(stamp);
+  if (!wrapper) {
+    /* إنشاء غلاف الختم مع مقبض التحجيم (مرة واحدة فقط) */
+    wrapper = document.createElement('div');
+    wrapper.id = 'pStampWrapper';
+    wrapper.className = 'stamp-wrapper';
+
+    const img = document.createElement('img');
+    img.id = 'pStamp';
+    img.className = 'stamp-img';
+    img.draggable = false;
+    img.alt = 'ختم';
+    img.referrerPolicy = 'no-referrer';
+
+    const handle = document.createElement('div');
+    handle.id = 'pStampHandle';
+    handle.className = 'stamp-resize-handle';
+
+    wrapper.appendChild(img);
+    wrapper.appendChild(handle);
+    document.getElementById('sheet').appendChild(wrapper);
+
+    attachDragHandlers(wrapper);
+    attachResizeHandlers(handle, wrapper);
   }
 
-  stamp.src = url;
-  applyStampStyles(stamp);
+  const stamp = wrapper.querySelector('#pStamp');
+  if (stamp) stamp.src = url;
+
+  applyStampStyles(wrapper);
 }
 
-function applyStampStyles(stamp) {
+/* ✅ تطبيق الموقع + الحجم + الدوران + الشفافية على الغلاف */
+function applyStampStyles(wrapper) {
+  if (!wrapper) return;
+
   const rot = parseFloat(document.getElementById('inpStampRot')?.value) || 0;
   const op  = parseFloat(document.getElementById('inpStampOpacity')?.value);
   const opv = isNaN(op) ? 0.85 : op;
+  const sz  = parseFloat(document.getElementById('inpStampSize')?.value);
+  const szv = (isNaN(sz) || sz <= 0) ? STAMP_DEFAULT_SIZE : sz;
 
-  stamp.style.left    = stampX + 'mm';
-  stamp.style.top     = stampY + 'mm';
-  stamp.style.width   = 'auto';
-  stamp.style.height  = 'auto';
-  stamp.style.opacity = opv;
-  stamp.style.transform = 'rotate(' + rot + 'deg)';
-  stamp.style.objectFit = 'contain';
+  wrapper.style.left      = stampX + 'mm';
+  wrapper.style.top       = stampY + 'mm';
+  wrapper.style.width     = szv + 'mm';
+  wrapper.style.height    = 'auto';
+  wrapper.style.opacity   = opv;
+  wrapper.style.transform = 'rotate(' + rot + 'deg)';
 }
 
 function attachDragHandlers(el) {
@@ -1241,13 +1327,84 @@ function attachDragHandlers(el) {
   document.addEventListener('touchend', end);
 }
 
+/* ✅ (جديد) التحجيم بالسحب المباشر عبر المقبض */
+function attachResizeHandlers(handle, wrapper) {
+  let resizing = false;
+  let lastClientX = 0;
+  let startSize = STAMP_DEFAULT_SIZE;
+
+  const getPoint = (ev) => {
+    if (ev.touches && ev.touches.length) return { x: ev.touches[0].clientX, y: ev.touches[0].clientY };
+    return { x: ev.clientX, y: ev.clientY };
+  };
+
+  const start = (ev) => {
+    resizing = true;
+    handle.classList.add('resizing');
+    const p = getPoint(ev);
+    lastClientX = p.x;
+    const szEl = document.getElementById('inpStampSize');
+    startSize = parseFloat(szEl?.value);
+    if (isNaN(startSize) || startSize <= 0) startSize = STAMP_DEFAULT_SIZE;
+    ev.stopPropagation();
+    ev.preventDefault();
+  };
+
+  const move = (ev) => {
+    if (!resizing) return;
+    const p = getPoint(ev);
+    const sheet = document.getElementById('sheet');
+    const rect = sheet.getBoundingClientRect();
+    const pxPerMmX = rect.width / 210;
+
+    const dxMm = (p.x - lastClientX) / pxPerMmX;
+    startSize += dxMm;
+
+    /* حدود آمنة: 5mm إلى 150mm */
+    startSize = Math.max(5, Math.min(150, startSize));
+
+    lastClientX = p.x;
+
+    const sizeEl = document.getElementById('inpStampSize');
+    if (sizeEl) sizeEl.value = startSize.toFixed(1);
+    applyStampStyles(wrapper);
+
+    ev.stopPropagation();
+    ev.preventDefault();
+  };
+
+  const end = (ev) => {
+    if (!resizing) return;
+    resizing = false;
+    handle.classList.remove('resizing');
+    if (ev && ev.stopPropagation) ev.stopPropagation();
+  };
+
+  handle.addEventListener('mousedown', start);
+  handle.addEventListener('touchstart', start, { passive: false });
+  document.addEventListener('mousemove', move);
+  document.addEventListener('touchmove', move, { passive: false });
+  document.addEventListener('mouseup', end);
+  document.addEventListener('touchend', end);
+}
+
+/* ✅ إعادة التعيين: الموقع + الحجم + الدوران (مدمج كما اقترحتَ) */
 function resetStampPos() {
   stampX = STAMP_DEFAULT_X;
   stampY = STAMP_DEFAULT_Y;
-  if(document.getElementById('inpStampX')) document.getElementById('inpStampX').value = stampX;
-  if(document.getElementById('inpStampY')) document.getElementById('inpStampY').value = stampY;
-  const stamp = document.getElementById('pStamp');
-  if (stamp) applyStampStyles(stamp);
+
+  const xEl   = document.getElementById('inpStampX');
+  const yEl   = document.getElementById('inpStampY');
+  const szEl  = document.getElementById('inpStampSize');
+  const rotEl = document.getElementById('inpStampRot');
+
+  if (xEl)   xEl.value   = stampX;
+  if (yEl)   yEl.value   = stampY;
+  if (szEl)  szEl.value  = STAMP_DEFAULT_SIZE;
+  if (rotEl) rotEl.value = STAMP_DEFAULT_ROT;
+
+  const wrapper = document.getElementById('pStampWrapper');
+  if (wrapper) applyStampStyles(wrapper);
 }
 
 function openPreview() {
@@ -1273,8 +1430,8 @@ function doPrint() {
   window.print();
 }
 
-/* ==================== حقول الختم ==================== */
-['inpStampRot','inpStampOpacity','inpStampX','inpStampY']
+/* ==================== حقول الختم (✅ أُضيف inpStampSize) ==================== */
+['inpStampRot','inpStampOpacity','inpStampX','inpStampY','inpStampSize']
   .forEach(id => {
     const el = document.getElementById(id);
     if(el) {
@@ -1289,6 +1446,144 @@ function doPrint() {
       });
     }
   });
+
+/* ======================================================
+   ============ تصدير الورقة إلى ملف PDF ============
+   ====================================================== */
+
+/* انتظار تحميل كل صور العنصر (لضمان ظهور الشعار/الباركود/الختم) */
+function waitForImages(root) {
+  const imgs = Array.from(root.querySelectorAll('img'));
+  if (!imgs.length) return Promise.resolve();
+  return Promise.all(imgs.map(img => {
+    if (img.complete && img.naturalWidth) return Promise.resolve();
+    return new Promise(resolve => {
+      let done = false;
+      const finish = () => { if (!done) { done = true; resolve(); } };
+      img.addEventListener('load', finish, { once: true });
+      img.addEventListener('error', finish, { once: true });
+      setTimeout(finish, 10000);
+    });
+  }));
+}
+
+let _pdfBusy = false;
+
+async function downloadPDF() {
+  if (_pdfBusy) return;
+
+  const sheetEl = document.getElementById('sheet');
+  if (!sheetEl) return;
+
+  if (typeof window.html2canvas === 'undefined' ||
+      !(window.jspdf && window.jspdf.jsPDF)) {
+    alert('تعذّر تحميل مكتبات تصدير PDF. تأكد من الاتصال بالإنترنت ثم أعد المحاولة.');
+    return;
+  }
+
+  _pdfBusy = true;
+
+  const pdfButtons = Array.from(document.querySelectorAll('.btn-pdf'));
+  pdfButtons.forEach(b => {
+    b.dataset.oldText = b.textContent;
+    b.disabled = true;
+    b.textContent = '⏳ جارٍ التصدير...';
+  });
+
+  /* تأكد من أن الورقة محدّثة والختم موجود بالقيم الحالية */
+  try { render(); } catch (e) {}
+  if (!document.getElementById('pStamp')) {
+    try { renderStamp(); } catch (e) {}
+  }
+
+  let holder = null;
+
+  try {
+    /* 1) حاوية مؤقتة في أعلى/يسار الصفحة تماماً (بلا هوامش ولا إزاحة) */
+    holder = document.createElement('div');
+    holder.style.position   = 'absolute';
+    holder.style.top        = '0';
+    holder.style.left       = '0';
+    holder.style.width      = '210mm';
+    holder.style.height     = '297mm';
+    holder.style.margin     = '0';
+    holder.style.padding    = '0';
+    holder.style.background = '#ffffff';
+    holder.style.overflow   = 'hidden';
+    holder.style.zIndex     = '2147483647';
+    holder.style.pointerEvents = 'none';
+
+    /* 2) نسخة طبق الأصل من الورقة (نفس المحتوى/الإحداثيات/الختم) */
+    const clone = sheetEl.cloneNode(true);
+    clone.removeAttribute('id');
+    clone.style.position        = 'absolute';
+    clone.style.top             = '0';
+    clone.style.left            = '0';
+    clone.style.margin          = '0';
+    clone.style.transform       = 'none';
+    clone.style.transformOrigin = 'top left';
+    clone.style.boxShadow       = 'none';
+
+    /* ✅ إزالة مقبض التحجيم من النسخة (حتى لا يظهر في PDF) */
+    const handleInClone = clone.querySelector('.stamp-resize-handle');
+    if (handleInClone) handleInClone.remove();
+
+    holder.appendChild(clone);
+    document.body.appendChild(holder);
+
+    /* 3) انتظار الإطارات + الصور */
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(r, 80))));
+    await waitForImages(clone);
+
+    const rect = clone.getBoundingClientRect();
+    const cw = Math.round(rect.width)  || 794;   /* 210mm ≈ 794px */
+    const ch = Math.round(rect.height) || 1123;  /* 297mm ≈ 1123px */
+
+    /* دقة كافية للطباعة (2 أو 3 حسب كثافة الشاشة) */
+    const scale = Math.min(3, Math.max(2, Math.round(window.devicePixelRatio || 1)));
+
+    /* 4) تصوير الورقة فقط */
+    const canvas = await html2canvas(clone, {
+      scale: scale,
+      useCORS: true,
+      allowTaint: false,
+      backgroundColor: '#ffffff',
+      logging: false,
+      imageTimeout: 20000,
+      width: cw,
+      height: ch,
+      windowWidth: cw,
+      windowHeight: ch
+    });
+
+    const imgData = canvas.toDataURL('image/png');
+
+    /* 5) إنشاء PDF بصفحة A4 عمودية واحدة فقط وبلا هوامش */
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
+      compress: true
+    });
+
+    pdf.addImage(imgData, 'PNG', 0, 0, 210, 297, undefined, 'FAST');
+
+    /* 6) التحميل باسم file.pdf حرفياً */
+    pdf.save('file.pdf');
+
+  } catch (err) {
+    console.error('PDF export error:', err);
+    alert('حدث خطأ أثناء إنشاء ملف PDF. حاول مرة أخرى.');
+  } finally {
+    if (holder && holder.parentNode) holder.parentNode.removeChild(holder);
+    pdfButtons.forEach(b => {
+      b.disabled = false;
+      if (b.dataset.oldText) b.textContent = b.dataset.oldText;
+    });
+    _pdfBusy = false;
+  }
+}
 
 /* ==================== ربط أحداث النموذج ==================== */
 document.querySelectorAll('.form-panel input, .form-panel select, .form-panel textarea')
