@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>وصل الجمارك الأردنية</title>
+<title>الة حاسبة</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -164,7 +164,7 @@
   .copy-tag { top: 14.4mm; right: 13.7mm; font-size: 8pt; white-space: nowrap; }
 
   /* ============================================================
-     الشعار: 13 × 15.5 مم (مطابق للصورة المرجعية)
+     الشعار: 13 × 15.5 مم
      ============================================================ */
   .crest-img { top: 14.0mm; left: 99.0mm; width: 13mm; height: 15.5mm; object-fit: contain; }
   .crest-fallback { top: 14.0mm; left: 99.0mm; width: 13mm; height: 15.5mm; border: 0.3mm dashed #b5b5b5; box-sizing: border-box; }
@@ -228,7 +228,7 @@
     white-space: nowrap;
   }
 
-  /* ============ صورة الختم (Draggable) ============ */
+  /* ============ صورة الختم (القديم — محتفظ به للتوافق) ============ */
   .stamp-img {
     position: absolute;
     pointer-events: auto;
@@ -242,7 +242,7 @@
   .stamp-img.dragging { cursor: grabbing; }
 
   /* ============================================================
-     ============ غلاف الختم + مقبض التحجيم (جديد) ============
+     ============ غلاف الختم + المقابض (جديد) ============
      ============================================================ */
   .stamp-wrapper {
     position: absolute;
@@ -253,6 +253,9 @@
     -webkit-user-drag: none;
     touch-action: none;
     line-height: 0;
+    /* ✅ الدوران دائمًا حول المركز مهما كان الحجم/الموقع/الزاوية */
+    transform-origin: center center;
+    will-change: transform;
   }
   .stamp-wrapper.dragging { cursor: grabbing; }
 
@@ -270,24 +273,72 @@
     touch-action: none;
   }
 
-  /* مقبض التحجيم: دائرة صغيرة في الزاوية السفلية اليمنى */
+  /* ---- مقبض التحجيم: مربع صغير على الزاوية السفلية اليمنى (جزء من الإطار) ---- */
   .stamp-resize-handle {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: #7a1f2b;
+    border: 2px solid #fff;
+    border-radius: 3px;
+    bottom: -6px;
+    right: -6px;
+    cursor: nwse-resize;
+    z-index: 7;
+    box-shadow: 0 1px 4px rgba(0,0,0,.5);
+    touch-action: none;
+    box-sizing: border-box;
+    transform-origin: center center;
+  }
+  /* توسيع منطقة اللمس دون تغيير الحجم البصري */
+  .stamp-resize-handle::before {
+    content: '';
+    position: absolute;
+    inset: -12px;
+  }
+  .stamp-resize-handle.resizing {
+    background: #621a24;
+  }
+
+  /* ---- مقبض الدوران: دائرة صغيرة فوق منتصف الصورة مع خط رفيع ---- */
+  .stamp-rotate-handle {
     position: absolute;
     width: 14px;
     height: 14px;
     background: #7a1f2b;
     border: 2px solid #fff;
     border-radius: 50%;
-    bottom: -7px;
-    right: -7px;
-    cursor: nwse-resize;
+    top: -34px;
+    left: 50%;
+    transform: translateX(-50%);
+    cursor: grab;
     z-index: 7;
     box-shadow: 0 1px 4px rgba(0,0,0,.5);
     touch-action: none;
     box-sizing: border-box;
+    transform-origin: center center;
   }
-  .stamp-resize-handle.resizing {
+  /* توسيع منطقة اللمس */
+  .stamp-rotate-handle::before {
+    content: '';
+    position: absolute;
+    inset: -12px;
+  }
+  /* الخط الرابط بين المقبض والصورة */
+  .stamp-rotate-handle::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    width: 1px;
+    height: 18px;
+    background: #7a1f2b;
+    transform: translateX(-50%);
+    pointer-events: none;
+  }
+  .stamp-rotate-handle.rotating {
     background: #621a24;
+    cursor: grabbing;
   }
 
   /* ============ شريط أدوات المعاينة ============ */
@@ -335,7 +386,6 @@
   .preview-toolbar .btn-close { background: #eee; color: #333; }
   .preview-toolbar .btn-close:hover { background: #ddd; }
 
-  /* ============ زر تحميل PDF ============ */
   .preview-toolbar .btn-pdf { background: #7a1f2b; color: #fff; }
   .preview-toolbar .btn-pdf:hover { background: #621a24; }
   .preview-toolbar .btn-pdf:disabled { opacity: .6; cursor: wait; }
@@ -385,7 +435,6 @@
   .mobile-bottom-bar .btn-pdf:active { background: #621a24; }
   .mobile-bottom-bar .btn-pdf:disabled { opacity: .6; }
 
-  /* إظهار الأزرار حسب الحالة */
   body.preview-mode .mobile-bottom-bar .only-edit { display: none; }
   body:not(.preview-mode) .mobile-bottom-bar .only-preview { display: none; }
 
@@ -418,7 +467,9 @@
     .lock-overlay { display: none !important; }
     .crest-fallback { display: none !important; }
     .panel-toggle { display: none !important; }
-    .stamp-resize-handle { display: none !important; }
+    /* ✅ إخفاء كلا المقبضين عند الطباعة */
+    .stamp-resize-handle,
+    .stamp-rotate-handle { display: none !important; }
     .preview-area {
       margin: 0 !important;
       padding: 0 !important;
@@ -475,6 +526,13 @@
 
     .preview-toolbar { display: none !important; }
     .mobile-bottom-bar { display: flex; }
+
+    /* ✅ تكبير المقابض على الهاتف (منطقة اللمس أهم من الحجم البصري) */
+    .stamp-resize-handle { width: 16px; height: 16px; bottom: -8px; right: -8px; }
+    .stamp-resize-handle::before { inset: -16px; }
+    .stamp-rotate-handle { width: 18px; height: 18px; top: -40px; }
+    .stamp-rotate-handle::before { inset: -16px; }
+    .stamp-rotate-handle::after { height: 22px; }
   }
 
   @media (max-width: 480px) {
@@ -494,7 +552,7 @@
 </head>
 <body>
 
-<!-- ==================== زر إظهار/إخفاء اللوحة (يظهر في الهاتف فقط) ==================== -->
+<!-- ==================== زر إظهار/إخفاء اللوحة ==================== -->
 <button class="panel-toggle" id="panelToggle" onclick="togglePanel()">☰ الإدخال</button>
 
 <!-- ==================== شاشة القفل: الآلة الحاسبة ==================== -->
@@ -531,7 +589,7 @@
 
 <!-- ==================== شريط أدوات المعاينة (سطح المكتب) ==================== -->
 <div class="preview-toolbar" id="previewToolbar">
-  <span class="hint">اسحب الختم لتحريكه، واسحب المقبض الأحمر لتحجيمه</span>
+  <span class="hint">اسحب الختم للتحريك • الزاوية السفلية للحجم • المقبض العلوي للدوران</span>
   <button class="btn-reset" onclick="resetStampPos()">إعادة تعيين الموقع/الحجم/الدوران</button>
   <button class="btn-print" onclick="doPrint()">🖨️ طباعة</button>
   <button class="btn-pdf"   onclick="downloadPDF()">⬇️ تحميل PDF</button>
@@ -563,7 +621,6 @@
     <div><label>موقع الختم X (مم)</label><input type="text" id="inpStampX" value="138"></div>
     <div><label>موقع الختم Y (مم)</label><input type="text" id="inpStampY" value="195"></div>
   </div>
-  <!-- ✅ حقل حجم الختم (جديد) -->
   <div class="row2">
     <div><label>حجم الختم (مم)</label><input type="text" id="inpStampSize" value="40"></div>
   </div>
@@ -707,7 +764,7 @@ const DEFAULT_BARCODE_URL = "https://i.imgur.com/yznREQi.jpeg";
 /* موضع الختم الافتراضي (ملّيمتر) */
 const STAMP_DEFAULT_X = 138;
 const STAMP_DEFAULT_Y = 195;
-/* ✅ حجم الختم الافتراضي (ملّيمتر) + دورانه الافتراضي (درجات) */
+/* حجم الختم الافتراضي (ملّيمتر) + دورانه الافتراضي (درجات) */
 const STAMP_DEFAULT_SIZE = 40;
 const STAMP_DEFAULT_ROT  = -30;
 
@@ -1213,6 +1270,9 @@ function render() {
    ==================== الختم / المعاينة ====================
    ====================================================== */
 
+/* نسبة أبعاد صورة الختم (عرض/ارتفاع) — تُحدَّث عند تحميل الصورة */
+let stampAspect = 1;
+
 function renderStamp() {
   const url = DEFAULT_STAMP_URL;
   let wrapper = document.getElementById('pStampWrapper');
@@ -1223,7 +1283,7 @@ function renderStamp() {
   }
 
   if (!wrapper) {
-    /* إنشاء غلاف الختم مع مقبض التحجيم (مرة واحدة فقط) */
+    /* إنشاء غلاف الختم مع المقبضين (مرة واحدة فقط) */
     wrapper = document.createElement('div');
     wrapper.id = 'pStampWrapper';
     wrapper.className = 'stamp-wrapper';
@@ -1234,21 +1294,35 @@ function renderStamp() {
     img.draggable = false;
     img.alt = 'ختم';
     img.referrerPolicy = 'no-referrer';
+    img.onload = () => {
+      if (img.naturalWidth && img.naturalHeight) {
+        stampAspect = img.naturalWidth / img.naturalHeight;
+      }
+      applyStampStyles(wrapper);
+    };
 
-    const handle = document.createElement('div');
-    handle.id = 'pStampHandle';
-    handle.className = 'stamp-resize-handle';
+    /* مقبض التحجيم (زاوية سفلية يمنى — جزء من الإطار) */
+    const resizeHandle = document.createElement('div');
+    resizeHandle.id = 'pStampResizeHandle';
+    resizeHandle.className = 'stamp-resize-handle';
+
+    /* مقبض الدوران (فوق منتصف أعلى الصورة) */
+    const rotateHandle = document.createElement('div');
+    rotateHandle.id = 'pStampRotateHandle';
+    rotateHandle.className = 'stamp-rotate-handle';
 
     wrapper.appendChild(img);
-    wrapper.appendChild(handle);
+    wrapper.appendChild(resizeHandle);
+    wrapper.appendChild(rotateHandle);
     document.getElementById('sheet').appendChild(wrapper);
 
     attachDragHandlers(wrapper);
-    attachResizeHandlers(handle, wrapper);
+    attachResizeHandlers(resizeHandle, wrapper);
+    attachRotateHandlers(rotateHandle, wrapper);
   }
 
   const stamp = wrapper.querySelector('#pStamp');
-  if (stamp) stamp.src = url;
+  if (stamp && stamp.src !== url) stamp.src = url;
 
   applyStampStyles(wrapper);
 }
@@ -1268,9 +1342,12 @@ function applyStampStyles(wrapper) {
   wrapper.style.width     = szv + 'mm';
   wrapper.style.height    = 'auto';
   wrapper.style.opacity   = opv;
+  /* ✅ التأكيد على أن الدوران حول المركز دائمًا */
+  wrapper.style.transformOrigin = 'center center';
   wrapper.style.transform = 'rotate(' + rot + 'deg)';
 }
 
+/* ==================== سحب التحريك (كما هو) ==================== */
 function attachDragHandlers(el) {
   let dragging = false;
   let lastClientX = 0, lastClientY = 0;
@@ -1327,11 +1404,15 @@ function attachDragHandlers(el) {
   document.addEventListener('touchend', end);
 }
 
-/* ✅ (جديد) التحجيم بالسحب المباشر عبر المقبض */
+/* ======================================================
+   ✅ التحجيم بالسحب من المقبض (قائم على المسافة من المركز)
+   — يعمل بشكل صحيح مهما كانت زاوية الدوران
+   ====================================================== */
 function attachResizeHandlers(handle, wrapper) {
   let resizing = false;
-  let lastClientX = 0;
+  let startDist = 1;
   let startSize = STAMP_DEFAULT_SIZE;
+  let centerX = 0, centerY = 0;
 
   const getPoint = (ev) => {
     if (ev.touches && ev.touches.length) return { x: ev.touches[0].clientX, y: ev.touches[0].clientY };
@@ -1342,10 +1423,19 @@ function attachResizeHandlers(handle, wrapper) {
     resizing = true;
     handle.classList.add('resizing');
     const p = getPoint(ev);
-    lastClientX = p.x;
+
+    /* مركز الغلاف في إحداثيات الشاشة (نفس المنطق في الدوران) */
+    const wRect = wrapper.getBoundingClientRect();
+    centerX = wRect.left + wRect.width / 2;
+    centerY = wRect.top + wRect.height / 2;
+
+    startDist = Math.hypot(p.x - centerX, p.y - centerY);
+    if (startDist < 1) startDist = 1;
+
     const szEl = document.getElementById('inpStampSize');
     startSize = parseFloat(szEl?.value);
     if (isNaN(startSize) || startSize <= 0) startSize = STAMP_DEFAULT_SIZE;
+
     ev.stopPropagation();
     ev.preventDefault();
   };
@@ -1353,20 +1443,14 @@ function attachResizeHandlers(handle, wrapper) {
   const move = (ev) => {
     if (!resizing) return;
     const p = getPoint(ev);
-    const sheet = document.getElementById('sheet');
-    const rect = sheet.getBoundingClientRect();
-    const pxPerMmX = rect.width / 210;
+    const dist = Math.hypot(p.x - centerX, p.y - centerY);
 
-    const dxMm = (p.x - lastClientX) / pxPerMmX;
-    startSize += dxMm;
-
-    /* حدود آمنة: 5mm إلى 150mm */
-    startSize = Math.max(5, Math.min(150, startSize));
-
-    lastClientX = p.x;
+    /* نسبة التكبير = نسبة تغيّر المسافة من المركز */
+    let newSize = startSize * (dist / startDist);
+    newSize = Math.max(5, Math.min(200, newSize));
 
     const sizeEl = document.getElementById('inpStampSize');
-    if (sizeEl) sizeEl.value = startSize.toFixed(1);
+    if (sizeEl) sizeEl.value = newSize.toFixed(1);
     applyStampStyles(wrapper);
 
     ev.stopPropagation();
@@ -1388,7 +1472,74 @@ function attachResizeHandlers(handle, wrapper) {
   document.addEventListener('touchend', end);
 }
 
-/* ✅ إعادة التعيين: الموقع + الحجم + الدوران (مدمج كما اقترحتَ) */
+/* ======================================================
+   ✅ الدوران بالسحب من المقبض (بطريقة فرق الزاوية — ناعم وبدون قفزات)
+   ====================================================== */
+function attachRotateHandlers(handle, wrapper) {
+  let rotating = false;
+  let lastAngle = 0;
+  let centerX = 0, centerY = 0;
+
+  const getPoint = (ev) => {
+    if (ev.touches && ev.touches.length) return { x: ev.touches[0].clientX, y: ev.touches[0].clientY };
+    return { x: ev.clientX, y: ev.clientY };
+  };
+
+  const start = (ev) => {
+    rotating = true;
+    handle.classList.add('rotating');
+    const p = getPoint(ev);
+
+    /* مركز الغلاف في إحداثيات الشاشة */
+    const wRect = wrapper.getBoundingClientRect();
+    centerX = wRect.left + wRect.width / 2;
+    centerY = wRect.top + wRect.height / 2;
+
+    lastAngle = Math.atan2(p.y - centerY, p.x - centerX);
+
+    ev.stopPropagation();
+    ev.preventDefault();
+  };
+
+  const move = (ev) => {
+    if (!rotating) return;
+    const p = getPoint(ev);
+    const angle = Math.atan2(p.y - centerY, p.x - centerX);
+
+    /* فرق الزاوية بالدرجات مع معالجة العبور عبر ±π */
+    let deltaDeg = (angle - lastAngle) * 180 / Math.PI;
+    while (deltaDeg > 180) deltaDeg -= 360;
+    while (deltaDeg < -180) deltaDeg += 360;
+
+    const rotEl = document.getElementById('inpStampRot');
+    let currentRot = parseFloat(rotEl?.value);
+    if (isNaN(currentRot)) currentRot = 0;
+    let newRot = currentRot + deltaDeg;
+
+    if (rotEl) rotEl.value = newRot.toFixed(1);
+    lastAngle = angle;
+    applyStampStyles(wrapper);
+
+    ev.stopPropagation();
+    ev.preventDefault();
+  };
+
+  const end = (ev) => {
+    if (!rotating) return;
+    rotating = false;
+    handle.classList.remove('rotating');
+    if (ev && ev.stopPropagation) ev.stopPropagation();
+  };
+
+  handle.addEventListener('mousedown', start);
+  handle.addEventListener('touchstart', start, { passive: false });
+  document.addEventListener('mousemove', move);
+  document.addEventListener('touchmove', move, { passive: false });
+  document.addEventListener('mouseup', end);
+  document.addEventListener('touchend', end);
+}
+
+/* ✅ إعادة التعيين: الموقع + الحجم + الدوران */
 function resetStampPos() {
   stampX = STAMP_DEFAULT_X;
   stampY = STAMP_DEFAULT_Y;
@@ -1423,14 +1574,13 @@ function openPreview() {
 function closePreview() {
   document.body.classList.remove('preview-mode');
   document.getElementById('previewToolbar').style.display = 'none';
-  /* ملاحظة: تم إلغاء حذف الختم — يبقى ظاهراً في مكانه */
 }
 
 function doPrint() {
   window.print();
 }
 
-/* ==================== حقول الختم (✅ أُضيف inpStampSize) ==================== */
+/* ==================== حقول الختم ==================== */
 ['inpStampRot','inpStampOpacity','inpStampX','inpStampY','inpStampSize']
   .forEach(id => {
     const el = document.getElementById(id);
@@ -1451,7 +1601,6 @@ function doPrint() {
    ============ تصدير الورقة إلى ملف PDF ============
    ====================================================== */
 
-/* انتظار تحميل كل صور العنصر (لضمان ظهور الشعار/الباركود/الختم) */
 function waitForImages(root) {
   const imgs = Array.from(root.querySelectorAll('img'));
   if (!imgs.length) return Promise.resolve();
@@ -1492,7 +1641,7 @@ async function downloadPDF() {
 
   /* تأكد من أن الورقة محدّثة والختم موجود بالقيم الحالية */
   try { render(); } catch (e) {}
-  if (!document.getElementById('pStamp')) {
+  if (!document.getElementById('pStampWrapper')) {
     try { renderStamp(); } catch (e) {}
   }
 
@@ -1513,7 +1662,7 @@ async function downloadPDF() {
     holder.style.zIndex     = '2147483647';
     holder.style.pointerEvents = 'none';
 
-    /* 2) نسخة طبق الأصل من الورقة (نفس المحتوى/الإحداثيات/الختم) */
+    /* 2) نسخة طبق الأصل من الورقة */
     const clone = sheetEl.cloneNode(true);
     clone.removeAttribute('id');
     clone.style.position        = 'absolute';
@@ -1524,9 +1673,9 @@ async function downloadPDF() {
     clone.style.transformOrigin = 'top left';
     clone.style.boxShadow       = 'none';
 
-    /* ✅ إزالة مقبض التحجيم من النسخة (حتى لا يظهر في PDF) */
-    const handleInClone = clone.querySelector('.stamp-resize-handle');
-    if (handleInClone) handleInClone.remove();
+    /* ✅ إزالة كلا المقبضين من النسخة (حتى لا يظهرا في PDF) */
+    clone.querySelectorAll('.stamp-resize-handle, .stamp-rotate-handle')
+         .forEach(h => h.remove());
 
     holder.appendChild(clone);
     document.body.appendChild(holder);
@@ -1536,13 +1685,13 @@ async function downloadPDF() {
     await waitForImages(clone);
 
     const rect = clone.getBoundingClientRect();
-    const cw = Math.round(rect.width)  || 794;   /* 210mm ≈ 794px */
-    const ch = Math.round(rect.height) || 1123;  /* 297mm ≈ 1123px */
+    const cw = Math.round(rect.width)  || 794;
+    const ch = Math.round(rect.height) || 1123;
 
-    /* دقة كافية للطباعة (2 أو 3 حسب كثافة الشاشة) */
+    /* دقة كافية للطباعة */
     const scale = Math.min(3, Math.max(2, Math.round(window.devicePixelRatio || 1)));
 
-    /* 4) تصوير الورقة فقط */
+    /* 4) تصوير الورقة فقط (html2canvas يقرأ transform الفعلي على العنصر) */
     const canvas = await html2canvas(clone, {
       scale: scale,
       useCORS: true,
