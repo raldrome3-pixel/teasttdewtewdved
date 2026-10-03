@@ -518,6 +518,67 @@
 
     .mobile-bottom-bar button { font-size: 12px; min-width: 70px; padding: 10px 8px; }
   }
+
+  /* ============================================================
+     ✅✅ إصلاح حجم الطباعة (أُضيف في نهاية الأنماط ليتغلّب
+     على قواعد الهاتف @media (max-width:900px) لأنها تُطابق
+     أيضًا عرض ورقة A4 عند الطباعة 794px < 900px)
+     ============================================================ */
+  body.printing .sheet {
+    --mobile-scale: 1 !important;
+    transform: none !important;
+    transform-origin: top left !important;
+    margin: 0 !important;
+    margin-top: 0 !important;
+    margin-right: 0 !important;
+    margin-bottom: 0 !important;
+    margin-left: 0 !important;
+    width: 210mm !important;
+    height: 297mm !important;
+    box-shadow: none !important;
+  }
+  body.printing .preview-area {
+    margin: 0 !important;
+    padding: 0 !important;
+    display: block !important;
+    overflow: visible !important;
+  }
+
+  @media print {
+    html, body {
+      width: 210mm !important;
+      height: 297mm !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      background: #fff !important;
+      overflow: hidden !important;
+    }
+    .preview-area {
+      margin: 0 !important;
+      padding: 0 !important;
+      display: block !important;
+      overflow: visible !important;
+    }
+    .sheet {
+      --mobile-scale: 1 !important;
+      transform: none !important;
+      transform-origin: top left !important;
+      margin: 0 !important;
+      margin-top: 0 !important;
+      margin-right: 0 !important;
+      margin-bottom: 0 !important;
+      margin-left: 0 !important;
+      width: 210mm !important;
+      height: 297mm !important;
+      box-shadow: none !important;
+      page-break-after: avoid;
+      break-after: avoid;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    .stamp-rotate-handle { display: none !important; }
+    @page { size: 210mm 297mm; margin: 0; }
+  }
 </style>
 </head>
 <body>
@@ -1457,8 +1518,92 @@ function closePreview() {
   document.getElementById('previewToolbar').style.display = 'none';
 }
 
+/* ======================================================
+   ✅✅ إصلاح حجم الطباعة (A4 كامل بدون تصغير)
+   ====================================================== */
+
+/* نصوص الـ viewport: الأصلي + نسخة الطباعة بعرض ثابت 794px
+   (= 210mm عند 96dpi) لمنع متصفحات الجوال من تصغير المخرَج */
+const VIEWPORT_ORIGINAL = 'width=device-width, initial-scale=1.0';
+const VIEWPORT_PRINT    = 'width=794, initial-scale=1.0';
+
+let _printRestoreTimer = null;
+let _viewportChanged   = false;
+
+function setPrintViewport(isPrint) {
+  const meta = document.querySelector('meta[name="viewport"]');
+  if (!meta) return;
+  meta.setAttribute('content', isPrint ? VIEWPORT_PRINT : VIEWPORT_ORIGINAL);
+  _viewportChanged = isPrint;
+}
+
+/* قبل الطباعة: صفّر مقياس الهاتف، أزل الـ transform والهوامش السالبة،
+   واجعل عرض الصفحة 794px حتى لا يصغّر المتصفح الورقة */
+function beforePrintFix() {
+  clearTimeout(_printRestoreTimer);
+
+  setPrintViewport(true);
+  document.body.classList.add('printing');
+
+  const sheet = document.getElementById('sheet');
+  if (sheet) {
+    sheet.style.setProperty('--mobile-scale', '1');
+    sheet.style.transform      = 'none';
+    sheet.style.transformOrigin = 'top left';
+    sheet.style.margin         = '0';
+    sheet.style.marginTop      = '0';
+    sheet.style.marginRight    = '0';
+    sheet.style.marginBottom   = '0';
+    sheet.style.marginLeft     = '0';
+    sheet.style.width          = '210mm';
+    sheet.style.height         = '297mm';
+  }
+
+  /* شبكة أمان: بعض المتصفحات لا تُطلق afterprint */
+  _printRestoreTimer = setTimeout(afterPrintFix, 30000);
+}
+
+/* بعد الطباعة: أعِد كل شيء إلى وضعه الطبيعي على الشاشة */
+function afterPrintFix() {
+  clearTimeout(_printRestoreTimer);
+
+  document.body.classList.remove('printing');
+
+  const sheet = document.getElementById('sheet');
+  if (sheet) {
+    sheet.style.removeProperty('--mobile-scale');
+    sheet.style.transform       = '';
+    sheet.style.transformOrigin = '';
+    sheet.style.margin          = '';
+    sheet.style.marginTop       = '';
+    sheet.style.marginRight     = '';
+    sheet.style.marginBottom    = '';
+    sheet.style.marginLeft      = '';
+    sheet.style.width           = '';
+    sheet.style.height          = '';
+  }
+
+  if (_viewportChanged) setPrintViewport(false);
+
+  updateMobileScale();
+}
+
+window.addEventListener('beforeprint', beforePrintFix);
+window.addEventListener('afterprint', afterPrintFix);
+
+if (window.matchMedia) {
+  const printMql = window.matchMedia('print');
+  const printMqlHandler = (m) => { if (m.matches) beforePrintFix(); else afterPrintFix(); };
+  if (printMql.addEventListener) printMql.addEventListener('change', printMqlHandler);
+  else if (printMql.addListener) printMql.addListener(printMqlHandler);
+}
+
 function doPrint() {
-  window.print();
+  beforePrintFix();
+  /* مهلة صغيرة حتى يُطبَّق viewport الطباعة وإلغاء التحويل قبل فتح نافذة الطباعة */
+  setTimeout(() => {
+    window.print();
+  }, 80);
 }
 
 /* ==================== حقول الختم ==================== */
